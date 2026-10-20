@@ -1,132 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { tutorService } from '../services/tutorService';
+import { supportService } from '../services/supportService';
+import { useSavedTutors } from '../context/SavedTutorsContext';
+import { useNotification } from '../context/NotificationContext';
+import ChatModal from '../Components/ChatModal';
+import ReviewModal from '../Components/ReviewModal';
 import '../CssPages/TutorProfile.css';
-
-const tutors = {
-  1: {
-    name: 'Hanna Tesfaye',
-    initials: 'HT',
-    subjects: ['Mathematics'],
-    grades: 'Grades 6 to 10',
-    modes: ['Online', 'In-person'],
-    rating: 4.9,
-    reviews: 38,
-    experience: 7,
-    price: 250,
-    verified: true,
-    about:
-      "I teach secondary school mathematics with a focus on understanding over memorising. Each lesson starts with the learner's current level, then builds toward exam confidence with short practice sets and clear feedback.",
-    method:
-      'Step-by-step explanations, worked examples, and a short summary note after each session.',
-    qualifications: [
-      'BSc Mathematics',
-      'Teaching certificate',
-      'Identity document reviewed by administrator',
-    ],
-  },
-  2: {
-    name: 'Yonas Girma',
-    initials: 'YG',
-    subjects: ['Mathematics', 'Physics'],
-    grades: 'Grades 6 to 12',
-    modes: ['Online'],
-    rating: 4.7,
-    reviews: 21,
-    experience: 4,
-    price: 220,
-    verified: true,
-    about:
-      'I am an engineering graduate who enjoys helping learners understand difficult concepts through practical examples and regular practice.',
-    method:
-      'Real-world examples, guided exercises, and practice questions tailored to each learner.',
-    qualifications: [
-      'Engineering graduate',
-      'Tutor experience: 4 years',
-      'Identity verification reviewed',
-    ],
-  },
-  3: {
-    name: 'Meseret Kebede',
-    initials: 'MK',
-    subjects: ['Mathematics'],
-    grades: 'Grades 5 to 9',
-    modes: ['In-person'],
-    rating: 4.8,
-    reviews: 15,
-    experience: 5,
-    price: 280,
-    verified: true,
-    about:
-      'I provide patient mathematics tutoring for middle-grade learners, helping them build confidence and strengthen their understanding.',
-    method: 'Homework support, worked examples, and weekly progress notes.',
-    qualifications: [
-      'Mathematics tutor',
-      'Tutor experience: 5 years',
-      'Identity verification reviewed',
-    ],
-  },
-  4: {
-    name: 'Biruk Tadesse',
-    initials: 'BT',
-    subjects: ['Mathematics'],
-    grades: 'Grades 6 to 9',
-    modes: ['Online'],
-    rating: 4.5,
-    reviews: 4,
-    experience: 1,
-    price: 150,
-    verified: false,
-    about:
-      'I offer affordable mathematics lessons for learners who need additional help with classroom topics and practice questions.',
-    method: 'Simple explanations and guided practice.',
-    qualifications: [
-      'University student',
-      'Tutor experience: 1 year',
-      'Verification is pending',
-    ],
-  },
-  5: {
-    name: 'Dawit Alemu',
-    initials: 'DA',
-    subjects: ['Physics', 'Chemistry'],
-    grades: 'Grades 9 to 12',
-    modes: ['Online', 'Hybrid'],
-    rating: 4.8,
-    reviews: 52,
-    experience: 6,
-    price: 320,
-    verified: true,
-    about:
-      'I help secondary school learners understand physics and chemistry through clear explanations, examples, and exam preparation.',
-    method: 'Concept explanations, worked problems, and exam practice.',
-    qualifications: [
-      'Science tutor',
-      'Tutor experience: 6 years',
-      'Identity verification reviewed',
-    ],
-  },
-  6: {
-    name: 'Selam Bekele',
-    initials: 'SB',
-    subjects: ['English', 'Amharic'],
-    grades: 'Grades 0 to 6',
-    modes: ['Online', 'In-person'],
-    rating: 4.9,
-    reviews: 27,
-    experience: 5,
-    price: 200,
-    verified: true,
-    about:
-      'I support younger learners as they develop their language, reading, writing, and communication skills.',
-    method:
-      'Reading activities, writing exercises, and age-appropriate learning tasks.',
-    qualifications: [
-      'Language tutor',
-      'Tutor experience: 5 years',
-      'Identity verification reviewed',
-    ],
-  },
-};
 
 const availableDays = [
   { day: 'Sat', date: '10' },
@@ -151,17 +31,51 @@ const availableTimes = [
 function TutorProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const tutor = tutors[id] || tutors['1'];
+  const { toggleSaved, isSaved } = useSavedTutors();
+  const { addToast } = useNotification();
+
+  const [tutor, setTutor] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const [selectedDay, setSelectedDay] = useState('Sat');
   const [selectedTime, setSelectedTime] = useState('');
-  const [mode, setMode] = useState(tutor.modes[0]);
+  const [mode, setMode] = useState('');
   const [duration, setDuration] = useState('1');
   const [learnerGrade, setLearnerGrade] = useState('8');
   const [learnerMessage, setLearnerMessage] = useState('');
   const [bookingMessage, setBookingMessage] = useState('');
-  const [showConfirmation, setShowConfirmation] = useState(false);
 
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+
+  const loadTutor = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await tutorService.getTutorById(id);
+      setTutor(data);
+      if (data && data.modes?.length) {
+        setMode(data.modes[0]);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    loadTutor();
+  }, [loadTutor]);
+
+  if (loading || !tutor) {
+    return (
+      <div className="app">
+        <main className="profile-page">
+          <p>Loading tutor profile...</p>
+        </main>
+      </div>
+    );
+  }
+
+  const saved = isSaved(tutor.id);
   const total = tutor.price * Number(duration);
 
   function handleBooking(event) {
@@ -169,38 +83,40 @@ function TutorProfile() {
 
     if (!selectedTime) {
       setBookingMessage('Please select an available lesson time.');
-      setShowConfirmation(false);
-      return;
-    }
-
-    const gradeRange = tutor.grades.match(/Grades (\d+) to (\d+)/);
-    const selectedGrade = Number(learnerGrade);
-
-    if (
-      gradeRange &&
-      (selectedGrade < Number(gradeRange[1]) ||
-        selectedGrade > Number(gradeRange[2]))
-    ) {
-      setBookingMessage(
-        `This tutor teaches ${tutor.grades}. Please select a grade within that range.`,
-      );
-      setShowConfirmation(false);
       return;
     }
 
     navigate('/booking-confirmation', {
       state: {
-        tutorId: id,
+        tutorId: tutor.id,
         tutorName: tutor.name,
         selectedDay,
+        selectedDate: availableDays.find((d) => d.day === selectedDay)?.date || '10',
         selectedTime,
         learnerGrade,
         mode,
         duration,
+        hourlyPrice: tutor.price,
         total,
         learnerMessage,
       },
     });
+  }
+
+  function handleReportReview(review) {
+    const reason = window.prompt(
+      `Please state the reason for reporting this review by "${review.author}":`,
+      'Misleading or inaccurate review'
+    );
+    if (reason && reason.trim()) {
+      supportService.submitReport({
+        title: `Reported Review for ${tutor.name}`,
+        submittedBy: 'Parent / User',
+        tutorName: tutor.name,
+        details: `Review comment: "${review.comment}". Reason reported: ${reason}`,
+      });
+      addToast('Review reported. Our administrator team will investigate.', 'info');
+    }
   }
 
   return (
@@ -226,15 +142,32 @@ function TutorProfile() {
                 </div>
 
                 <p>
-                  {tutor.subjects.join(', ')} · {tutor.grades} ·{' '}
-                  {tutor.modes.join(' and ')}
+                  {(tutor.subjects || []).join(', ')} · {tutor.gradeRangeLabel || `Grades ${tutor.grades?.join(', ')}`} ·{' '}
+                  {(tutor.modes || []).join(' and ')}
                 </p>
 
                 <div className="find-meta">
                   <span>
-                    ★ {tutor.rating} ({tutor.reviews} reviews)
+                    ★ {tutor.rating} ({tutor.reviewsCount || tutor.reviews?.length || 0} reviews)
                   </span>
                   <span>{tutor.experience} years experience</span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
+                  <button
+                    type="button"
+                    className="secondary-btn"
+                    onClick={() => setShowChatModal(true)}
+                  >
+                    💬 Message tutor
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-btn"
+                    onClick={() => toggleSaved(tutor.id, tutor.name)}
+                  >
+                    {saved ? '♥ Saved' : '♡ Save tutor'}
+                  </button>
                 </div>
               </div>
             </article>
@@ -249,24 +182,21 @@ function TutorProfile() {
 
             <section className="profile-section">
               <h2>Subjects and grades</h2>
-
               <div className="profile-tags">
-                {tutor.subjects.map((subject) => (
+                {(tutor.subjects || []).map((subject) => (
                   <span key={subject}>{subject}</span>
                 ))}
-                <span>{tutor.grades}</span>
+                <span>{tutor.gradeRangeLabel || 'All Grades'}</span>
               </div>
             </section>
 
             <section className="profile-section">
               <h2>Qualifications</h2>
-
               <ul className="qualification-list">
-                {tutor.qualifications.map((qualification) => (
-                  <li key={qualification}>{qualification}</li>
+                {(tutor.qualifications || []).map((qualification, idx) => (
+                  <li key={idx}>{qualification}</li>
                 ))}
               </ul>
-
               <p className="demo-note">
                 Sample qualifications for demonstration. Real credentials must
                 be reviewed by an administrator.
@@ -274,45 +204,40 @@ function TutorProfile() {
             </section>
 
             <section className="profile-section">
-              <h2>Reviews</h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h2>Reviews</h2>
+                <button
+                  type="button"
+                  className="secondary-btn"
+                  onClick={() => setShowReviewModal(true)}
+                >
+                  Write a review
+                </button>
+              </div>
               <p className="review-policy">
                 Only learners and guardians with completed sessions can review.
               </p>
 
-              <article className="review-card">
-                <div className="review-heading">
-                  <strong>Guardian of a Grade 8 learner</strong>
-                  <span>★ 5.0</span>
-                </div>
-                <p>
-                  Clear, patient and always on time. The explanations were very
-                  helpful.
-                </p>
-                <button
-                  className="report-review"
-                  onClick={() =>
-                    alert('Review reporting will be connected later.')
-                  }
-                >
-                  Report this review
-                </button>
-              </article>
-
-              <article className="review-card">
-                <div className="review-heading">
-                  <strong>Guardian of a Grade 9 learner</strong>
-                  <span>★ 4.8</span>
-                </div>
-                <p>Good explanations and helpful notes after each lesson.</p>
-                <button
-                  className="report-review"
-                  onClick={() =>
-                    alert('Review reporting will be connected later.')
-                  }
-                >
-                  Report this review
-                </button>
-              </article>
+              {(!tutor.reviews || tutor.reviews.length === 0) ? (
+                <p className="demo-note">No reviews yet.</p>
+              ) : (
+                tutor.reviews.map((review) => (
+                  <article className="review-card" key={review.id}>
+                    <div className="review-heading">
+                      <strong>{review.author}</strong>
+                      <span>★ {review.rating}</span>
+                    </div>
+                    <p>{review.comment}</p>
+                    <button
+                      type="button"
+                      className="report-review"
+                      onClick={() => handleReportReview(review)}
+                    >
+                      Report this review
+                    </button>
+                  </article>
+                ))
+              )}
             </section>
           </section>
 
@@ -331,7 +256,7 @@ function TutorProfile() {
                 value={mode}
                 onChange={(event) => setMode(event.target.value)}
               >
-                {tutor.modes.map((item) => (
+                {(tutor.modes || ['Online', 'In-person']).map((item) => (
                   <option key={item} value={item}>
                     {item}
                   </option>
@@ -365,7 +290,7 @@ function TutorProfile() {
                     onClick={() => {
                       setSelectedDay(item.day);
                       setSelectedTime('');
-                      setShowConfirmation(false);
+                      setBookingMessage('');
                     }}
                   >
                     <span>{item.day}</span>
@@ -387,7 +312,6 @@ function TutorProfile() {
                     }
                     onClick={() => {
                       setSelectedTime(time);
-                      setShowConfirmation(false);
                       setBookingMessage('');
                     }}
                   >
@@ -446,21 +370,8 @@ function TutorProfile() {
               </button>
 
               {bookingMessage && (
-                <div
-                  className={
-                    showConfirmation
-                      ? 'booking-feedback success'
-                      : 'booking-feedback error'
-                  }
-                  role="status"
-                >
+                <div className="booking-feedback error" role="status">
                   {bookingMessage}
-                  {showConfirmation && (
-                    <p>
-                      This is a frontend demonstration only. No booking has been
-                      sent to a tutor.
-                    </p>
-                  )}
                 </div>
               )}
 
@@ -471,6 +382,23 @@ function TutorProfile() {
           </aside>
         </div>
       </main>
+
+      {/* Chat with Tutor */}
+      {showChatModal && (
+        <ChatModal
+          tutor={tutor}
+          onClose={() => setShowChatModal(false)}
+        />
+      )}
+
+      {/* Review Tutor */}
+      {showReviewModal && (
+        <ReviewModal
+          tutor={tutor}
+          onClose={() => setShowReviewModal(false)}
+          onReviewAdded={(updated) => setTutor(updated)}
+        />
+      )}
     </div>
   );
 }
