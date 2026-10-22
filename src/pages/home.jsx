@@ -1,5 +1,6 @@
-import { useNavigate } from 'react-router-dom';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { tutorService } from '../services/tutorService';
 
 import '../App.css';
 
@@ -9,9 +10,8 @@ const subjects = [
   'Physics',
   'Chemistry',
   'Biology',
-  'Other Course',
-  'Information Communication and Technology (ICT)',
   'General Science',
+  'Information Communication and Technology (ICT)',
   'History',
   'Geography',
   'Amharic',
@@ -19,41 +19,18 @@ const subjects = [
   'Economics',
   'Drawing',
   'Early learning',
-  'Programing',
-];
-
-const tutors = [
-  {
-    id: 1,
-    initials: 'HT',
-    name: 'Hanna Tesfaye',
-    subject: 'Mathematics · Grades 6–10',
-    rating: '4.9',
-    reviews: 38,
-    price: 250,
-  },
-  {
-    id: 5,
-    initials: 'DA',
-    name: 'Dawit Alemu',
-    subject: 'Physics, Chemistry · Grades 9–12',
-    rating: '4.8',
-    reviews: 52,
-    price: 320,
-  },
-  {
-    id: 6,
-    initials: 'SB',
-    name: 'Selam Bekele',
-    subject: 'English · Grades 0–6',
-    rating: '4.9',
-    reviews: 27,
-    price: 200,
-  },
+  'Programming',
 ];
 
 function Home() {
   const navigate = useNavigate();
+  const [featuredTutors, setFeaturedTutors] = useState([]);
+
+  useEffect(() => {
+    tutorService.getAllTutors().then((list) => {
+      setFeaturedTutors(list.slice(0, 3));
+    });
+  }, []);
 
   return (
     <div className="app">
@@ -77,9 +54,9 @@ function Home() {
               <Link to="/find-tutors" className="primary-btn">
                 Find a tutor
               </Link>
-              <a href="#become-tutor" className="secondary-btn">
+              <Link to="/register" className="secondary-btn">
                 Become a tutor
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -252,7 +229,7 @@ function Home() {
           <div className="section-heading">
             <div>
               <span className="eyebrow">Learn from the best</span>
-              <h2>Meet some of our tutors</h2>
+              <h2>Meet some of our top tutors</h2>
             </div>
             <Link to="/find-tutors" className="text-link">
               Browse all tutors →
@@ -260,19 +237,25 @@ function Home() {
           </div>
 
           <div className="tutors-grid">
-            {tutors.map((tutor) => (
-              <article className="tutor-card" key={tutor.name}>
+            {featuredTutors.map((tutor) => (
+              <article className="tutor-card" key={tutor.id}>
                 <div className="tutor-top">
                   <div className="avatar">{tutor.initials}</div>
-                  <span className="verified">✓ Verified</span>
+                  {tutor.verified ? (
+                    <span className="verified">✓ Verified</span>
+                  ) : (
+                    <span className="pending-badge">Pending</span>
+                  )}
                 </div>
 
                 <h3>{tutor.name}</h3>
-                <p className="tutor-subject">{tutor.subject}</p>
+                <p className="tutor-subject">
+                  {(tutor.subjects || []).join(', ')} · {tutor.gradeRangeLabel || 'All Grades'}
+                </p>
 
                 <div className="tutor-bottom">
                   <span className="rating">
-                    ★ {tutor.rating} ({tutor.reviews} reviews)
+                    ★ {tutor.rating} ({tutor.reviewsCount || tutor.reviews?.length || 0} reviews)
                   </span>
                   <strong>
                     {tutor.price} ETB<span>/hr</span>
@@ -283,15 +266,11 @@ function Home() {
                   className="secondary-btn full-width"
                   onClick={() => navigate(`/tutors/${tutor.id}`)}
                 >
-                  View tutor profile →
+                  View tutor profile & Book →
                 </button>
               </article>
             ))}
           </div>
-
-          <p className="demo-note">
-            Sample tutor profiles for design purposes.
-          </p>
         </section>
 
         <section className="become-tutor" id="become-tutor">
@@ -300,7 +279,7 @@ function Home() {
             <h2>Are you a tutor?</h2>
             <p>
               Build a professional profile, set your own availability and price,
-              and reach learners and guardians looking for your subjects.
+              and reach learners and guardians looking for your subjects across Ethiopia.
             </p>
           </div>
           <button className="primary-btn" onClick={() => navigate('/register')}>

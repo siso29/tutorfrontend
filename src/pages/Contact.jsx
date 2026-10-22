@@ -1,5 +1,16 @@
 import { useState } from 'react';
+import { supportService } from '../services/supportService';
+import { useNotification } from '../context/NotificationContext';
 import '../CssPages/Contact.css';
+
+const SUBJECT_LABELS = {
+  'finding-tutor': 'Finding a tutor',
+  'becoming-tutor': 'Becoming a tutor',
+  booking: 'Booking and scheduling',
+  account: 'Account support',
+  technical: 'Technical problem',
+  other: 'Other inquiry',
+};
 
 function Contact() {
   const [formData, setFormData] = useState({
@@ -9,7 +20,9 @@ function Contact() {
     message: '',
   });
 
-  const [success, setSuccess] = useState('');
+  const [ticket, setTicket] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { addToast } = useNotification();
 
   const handleChange = (e) => {
     setFormData({
@@ -20,14 +33,32 @@ function Contact() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
-    setSuccess('Thank you! Your message has been recorded in this demo.');
-    setFormData({
-      name: '',
-      email: '',
-      subject: '',
-      message: '',
-    });
+    try {
+      const subjectLabel = SUBJECT_LABELS[formData.subject] || formData.subject;
+      const newInquiry = supportService.submitInquiry({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        subject: formData.subject,
+        subjectLabel,
+        message: formData.message.trim(),
+      });
+
+      setTicket(newInquiry);
+      addToast(`Support ticket ${newInquiry.ticketNumber} created!`, 'success');
+
+      setFormData({
+        name: '',
+        email: '',
+        subject: '',
+        message: '',
+      });
+    } catch {
+      addToast('Failed to submit message. Please try again.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -37,7 +68,7 @@ function Contact() {
         <h1>Let's talk about your learning goals.</h1>
         <p>
           Have a question about finding a tutor, becoming a tutor, or using
-          TutorConnect? Send our team a message.
+          TutorConnect? Send our support team a message.
         </p>
       </section>
 
@@ -46,28 +77,39 @@ function Contact() {
           <h2>Get in touch</h2>
           <p>
             We want to make finding the right learning support simple and
-            comfortable for everyone.
+            comfortable for everyone across Ethiopia.
           </p>
 
           <div className="contact-info-item">
             <h3>Email support</h3>
-            <p>support@tutorconnect.example</p>
+            <p>support@tutorconnect.et</p>
           </div>
 
           <div className="contact-info-item">
             <h3>Support hours</h3>
-            <p>Monday – Friday</p>
-            <p>9:00 AM – 5:00 PM</p>
+            <p>Monday – Saturday</p>
+            <p>8:30 AM – 6:00 PM (EAT)</p>
+          </div>
+
+          <div className="contact-info-item">
+            <h3>Addis Ababa Office</h3>
+            <p>Bole Sub-City, Addis Ababa, Ethiopia</p>
           </div>
 
           <div className="contact-info-item">
             <h3>What can we help with?</h3>
-            <p>Finding tutors, bookings, accounts, and technical issues.</p>
+            <p>Finding tutors, verified credentials, bookings, and parent accounts.</p>
           </div>
         </div>
 
         <form className="contact-form" onSubmit={handleSubmit}>
           <h2>Send us a message</h2>
+
+          {ticket && (
+            <p className="contact-success">
+              Thank you, {ticket.name}! Your message has been received (Ticket #{ticket.ticketNumber}). We will follow up at {ticket.email}.
+            </p>
+          )}
 
           <label htmlFor="contact-name">Full name</label>
           <input
@@ -75,7 +117,7 @@ function Contact() {
             name="name"
             value={formData.name}
             onChange={handleChange}
-            placeholder="Enter your full name"
+            placeholder="e.g. Solomon Desta"
             required
           />
 
@@ -118,11 +160,9 @@ function Contact() {
             required
           />
 
-          <button type="submit" className="primary-btn">
-            Send message
+          <button type="submit" className="primary-btn" disabled={isSubmitting}>
+            {isSubmitting ? 'Sending...' : 'Send Message'}
           </button>
-
-          {success && <p className="contact-success">{success}</p>}
         </form>
       </section>
     </main>

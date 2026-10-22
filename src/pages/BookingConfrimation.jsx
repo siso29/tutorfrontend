@@ -1,18 +1,137 @@
-import { useLocation, Link } from 'react-router-dom';
+import { useState } from 'react';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
+import { useBookings } from '../context/BookingContext';
+import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import '../CssPages/BookingConfirmation.css';
+import { paymentService } from '../services/paymentService';
 
 function BookingConfirmation() {
   const location = useLocation();
+  const navigate = useNavigate();
   const booking = location.state;
+  const { createBooking } = useBookings();
+  const { user } = useAuth();
+  const { addToast } = useNotification();
 
-  if (!booking) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmedBooking, setConfirmedBooking] = useState(null);
+  const [isPaying, setIsPaying] = useState(false);
+
+  if (!booking && !confirmedBooking) {
     return (
       <main className="booking-confirmation">
-        <h1>No booking details found</h1>
-        <p>Please select a tutor and complete the booking form first.</p>
-        <Link to="/find-tutors" className="booking-btn">
-          Find Tutors
-        </Link>
+        <div className="booking-card">
+          <h1>No booking details found</h1>
+          <p>Please select a tutor and complete the booking form first.</p>
+          <div className="booking-actions">
+            <Link to="/find-tutors" className="booking-btn">
+              Find Tutors
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  const handleConfirmBooking = async () => {
+    setIsSubmitting(true);
+    try {
+      const newBooking = await createBooking({
+        learnerId: user?.id || 'u-guest',
+        learnerName: user?.name ? `${user.name} (Learner)` : 'Abel Jr. Bekele',
+        guardianName: user?.name || 'Abel Bekele',
+        tutorId: booking.tutorId,
+        tutorName: booking.tutorName,
+        subject: 'Mathematics', // default or extracted from context
+        date: `${booking.selectedDay} ${booking.selectedDate || '24'} Oct 2026`,
+        time: booking.selectedTime,
+        mode: booking.mode,
+        grade: `Grade ${booking.learnerGrade}`,
+        duration: booking.duration,
+        price: booking.hourlyPrice || 250,
+        total: booking.total,
+        message: booking.learnerMessage,
+        status: 'Pending',
+      });
+
+      setConfirmedBooking(newBooking);
+      addToast('Booking request sent to tutor!', 'success');
+    } catch {
+      addToast('Failed to create booking. Please try again.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handlePayNow = async () => {
+    setIsPaying(true);
+    try {
+      const result = await paymentService.startCheckout(confirmedBooking.bookingId);
+      window.location.assign(result.checkoutUrl);
+    } catch (error) {
+      addToast(error.message || 'Unable to start payment. Please try again.', 'error');
+      setIsPaying(false);
+    }
+  };
+
+  if (confirmedBooking) {
+    return (
+      <main className="booking-confirmation">
+        <div className="booking-card">
+          <div className="booking-icon">✓</div>
+
+          <h1>Booking Request Sent!</h1>
+          <p className="booking-subtitle">
+            Your lesson request has been delivered to <strong>{confirmedBooking.tutorName}</strong>.
+          </p>
+
+          <div className="booking-status">
+            REFERENCE: #{confirmedBooking.id.slice(-6).toUpperCase()} · STATUS: PENDING TUTOR CONFIRMATION
+          </div>
+
+          <div className="booking-details">
+            <div>
+              <span>Tutor</span>
+              <strong>{confirmedBooking.tutorName}</strong>
+            </div>
+            <div>
+              <span>Scheduled Date</span>
+              <strong>{confirmedBooking.date}</strong>
+            </div>
+            <div>
+              <span>Time</span>
+              <strong>{confirmedBooking.time}</strong>
+            </div>
+            <div>
+              <span>Mode</span>
+              <strong>{confirmedBooking.mode}</strong>
+            </div>
+            <div>
+              <span>Total Price</span>
+              <strong>{confirmedBooking.total} ETB</strong>
+            </div>
+          </div>
+
+          <div className="booking-actions">
+            {confirmedBooking.bookingId && (
+              <button type="button" className="booking-btn" disabled={isPaying} onClick={handlePayNow}>
+                {isPaying ? 'Opening secure checkout…' : 'Pay Securely with Chapa'}
+              </button>
+            )}
+            <button
+              type="button"
+              className="booking-btn secondary"
+              onClick={() => navigate('/guardian-dashboard')}
+            >
+              View in My Dashboard
+            </button>
+            <Link to="/payment-history" className="booking-btn secondary">Payment History</Link>
+            <Link to="/find-tutors" className="booking-btn secondary">
+              Find Another Tutor
+            </Link>
+          </div>
+        </div>
       </main>
     );
   }
@@ -22,12 +141,12 @@ function BookingConfirmation() {
       <div className="booking-card">
         <div className="booking-icon">✓</div>
 
-        <h1>Booking Request Summary</h1>
+        <h1>Review Lesson Request</h1>
         <p className="booking-subtitle">
-          Review your lesson details before continuing.
+          Confirm your lesson details before submitting to the tutor.
         </p>
 
-        <div className="booking-status">Status: Pending confirmation</div>
+        <div className="booking-status">Status: Ready to submit</div>
 
         <div className="booking-details">
           <div>
@@ -36,22 +155,24 @@ function BookingConfirmation() {
           </div>
 
           <div>
-            <span>Lesson day</span>
-            <strong>{booking.selectedDay}</strong>
+            <span>Lesson Day</span>
+            <strong>
+              {booking.selectedDay} {booking.selectedDate} Oct 2026
+            </strong>
           </div>
 
           <div>
-            <span>Lesson time</span>
+            <span>Lesson Time</span>
             <strong>{booking.selectedTime}</strong>
           </div>
 
           <div>
             <span>Grade</span>
-            <strong>{booking.learnerGrade}</strong>
+            <strong>Grade {booking.learnerGrade}</strong>
           </div>
 
           <div>
-            <span>Lesson mode</span>
+            <span>Lesson Mode</span>
             <strong>{booking.mode}</strong>
           </div>
 
@@ -61,31 +182,31 @@ function BookingConfirmation() {
           </div>
 
           <div>
-            <span>Total price</span>
+            <span>Total Price</span>
             <strong>{booking.total} ETB</strong>
           </div>
         </div>
 
         <div className="booking-message">
-          <strong>Message to tutor</strong>
-          <p>{booking.learnerMessage || 'No message provided.'}</p>
+          <strong>Message to Tutor</strong>
+          <p>{booking.learnerMessage || 'No specific notes provided.'}</p>
         </div>
 
-        <p className="booking-note">
-          This is a frontend demo. Your booking has not been saved or sent to
-          the tutor yet.
-        </p>
-
         <div className="booking-actions">
-          <Link to="/find-tutors" className="booking-btn">
-            Find Another Tutor
-          </Link>
+          <button
+            type="button"
+            className="booking-btn"
+            disabled={isSubmitting}
+            onClick={handleConfirmBooking}
+          >
+            {isSubmitting ? 'Sending Request...' : 'Confirm & Send Request to Tutor ✓'}
+          </button>
 
           <Link
             to={`/tutors/${booking.tutorId}`}
             className="booking-btn secondary"
           >
-            Back to Tutor Profile
+            ← Modify Lesson
           </Link>
         </div>
       </div>

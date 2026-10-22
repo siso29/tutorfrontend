@@ -1,109 +1,18 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { tutorService } from '../services/tutorService';
+import { useSavedTutors } from '../context/SavedTutorsContext';
+import ChatModal from '../Components/ChatModal';
 import '../CssPages/FindTutors.css';
-
-const tutors = [
-  {
-    id: 1,
-    initials: 'HT',
-    name: 'Hanna Tesfaye',
-    subjects: ['Mathematics'],
-    grades: [6, 7, 8, 9, 10],
-    modes: ['Online', 'In-person'],
-    rating: 4.9,
-    reviews: 38,
-    experience: 7,
-    price: 250,
-    availability: 'Sat 10:00',
-    verified: true,
-    description:
-      'Secondary school mathematics teacher focused on exam confidence and clear step-by-step methods.',
-  },
-  {
-    id: 2,
-    initials: 'YG',
-    name: 'Yonas Girma',
-    subjects: ['Mathematics', 'Physics'],
-    grades: [6, 7, 8, 9, 10, 11, 12],
-    modes: ['Online'],
-    rating: 4.7,
-    reviews: 21,
-    experience: 4,
-    price: 220,
-    availability: 'Mon 17:00',
-    verified: true,
-    description:
-      'Engineering graduate who explains concepts with real examples and practice sets.',
-  },
-  {
-    id: 3,
-    initials: 'MK',
-    name: 'Meseret Kebede',
-    subjects: ['Mathematics'],
-    grades: [5, 6, 7, 8, 9],
-    modes: ['In-person'],
-    rating: 4.8,
-    reviews: 15,
-    experience: 5,
-    price: 280,
-    availability: 'Tue 16:30',
-    verified: true,
-    description:
-      'Patient tutor for middle grades, with homework support and weekly progress notes.',
-  },
-  {
-    id: 4,
-    initials: 'BT',
-    name: 'Biruk Tadesse',
-    subjects: ['Mathematics'],
-    grades: [6, 7, 8, 9],
-    modes: ['Online'],
-    rating: 4.5,
-    reviews: 4,
-    experience: 1,
-    price: 150,
-    availability: 'Wed 18:00',
-    verified: false,
-    description:
-      'University student offering affordable lessons for Grades 6 to 9.',
-  },
-  {
-    id: 5,
-    initials: 'DA',
-    name: 'Dawit Alemu',
-    subjects: ['Physics', 'Chemistry'],
-    grades: [9, 10, 11, 12],
-    modes: ['Online', 'Hybrid'],
-    rating: 4.8,
-    reviews: 52,
-    experience: 6,
-    price: 320,
-    availability: 'Thu 15:00',
-    verified: true,
-    description:
-      'Science tutor helping students understand difficult topics and prepare for exams.',
-  },
-  {
-    id: 6,
-    initials: 'SB',
-    name: 'Selam Bekele',
-    subjects: ['English', 'Amharic'],
-    grades: [0, 1, 2, 3, 4, 5, 6],
-    modes: ['Online', 'In-person'],
-    rating: 4.9,
-    reviews: 27,
-    experience: 5,
-    price: 200,
-    availability: 'Fri 14:00',
-    verified: true,
-    description:
-      'Language tutor specializing in reading, writing and early learning.',
-  },
-];
 
 function FindTutors() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { toggleSaved, isSaved } = useSavedTutors();
+
+  const [tutorList, setTutorList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeChatTutor, setActiveChatTutor] = useState(null);
 
   const [search, setSearch] = useState('');
   const [subject, setSubject] = useState('Any');
@@ -113,11 +22,23 @@ function FindTutors() {
   const [minRating, setMinRating] = useState('0');
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [sort, setSort] = useState('recommended');
-  const [saved, setSaved] = useState([]);
+
+  const loadTutors = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await tutorService.getAllTutors();
+      setTutorList(data);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadTutors();
+  }, [loadTutors]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-
     setSearch(params.get('search') || '');
     setSubject(params.get('subject') || 'Any');
     setGrade(params.get('grade') || '');
@@ -126,17 +47,18 @@ function FindTutors() {
   }, [location.search]);
 
   const filteredTutors = useMemo(() => {
-    const results = tutors.filter((tutor) => {
-      const searchMatch = `${tutor.name} ${tutor.subjects.join(' ')}`
+    const results = tutorList.filter((tutor) => {
+      const searchMatch = `${tutor.name} ${(tutor.subjects || []).join(' ')}`
         .toLowerCase()
         .includes(search.toLowerCase());
 
       const subjectMatch =
-        subject === 'Any' || tutor.subjects.includes(subject);
+        subject === 'Any' || (tutor.subjects || []).includes(subject);
 
-      const gradeMatch = grade === '' || tutor.grades.includes(Number(grade));
+      const gradeMatch =
+        grade === '' || (tutor.grades || []).includes(Number(grade));
 
-      const modeMatch = mode === 'Any' || tutor.modes.includes(mode);
+      const modeMatch = mode === 'Any' || (tutor.modes || []).includes(mode);
 
       const priceMatch = tutor.price <= maxPrice;
       const ratingMatch = tutor.rating >= Number(minRating);
@@ -164,7 +86,7 @@ function FindTutors() {
     }
 
     return results;
-  }, [search, subject, grade, mode, maxPrice, minRating, verifiedOnly, sort]);
+  }, [tutorList, search, subject, grade, mode, maxPrice, minRating, verifiedOnly, sort]);
 
   function clearFilters() {
     setSearch('');
@@ -177,14 +99,6 @@ function FindTutors() {
     setSort('recommended');
   }
 
-  function toggleSaved(id) {
-    setSaved((previous) =>
-      previous.includes(id)
-        ? previous.filter((item) => item !== id)
-        : [...previous, id],
-    );
-  }
-
   return (
     <div className="app">
       <main className="find-page">
@@ -192,8 +106,7 @@ function FindTutors() {
           <span className="eyebrow">Find your learning partner</span>
           <h1>Find a tutor</h1>
           <p>
-            Compare tutors by subject, grade, price and availability to find the
-            right match.
+            Compare verified tutors by subject, grade, price and availability to find the right match.
           </p>
         </div>
 
@@ -299,7 +212,9 @@ function FindTutors() {
           <section className="results-panel">
             <div className="results-toolbar">
               <div>
-                <h2>{filteredTutors.length} tutors found</h2>
+                <h2>
+                  {loading ? 'Searching...' : `${filteredTutors.length} tutors found`}
+                </h2>
                 <p>Review each tutor's details before booking.</p>
               </div>
 
@@ -319,7 +234,11 @@ function FindTutors() {
               </div>
             </div>
 
-            {filteredTutors.length === 0 ? (
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                <p>Loading available tutors...</p>
+              </div>
+            ) : filteredTutors.length === 0 ? (
               <div className="no-results">
                 <h3>No tutors match your filters</h3>
                 <p>Try changing the subject, grade, price or rating.</p>
@@ -329,76 +248,82 @@ function FindTutors() {
               </div>
             ) : (
               <div className="find-results">
-                {filteredTutors.map((tutor) => (
-                  <article className="find-tutor-card" key={tutor.id}>
-                    <div className="find-avatar">{tutor.initials}</div>
+                {filteredTutors.map((tutor) => {
+                  const saved = isSaved(tutor.id);
+                  return (
+                    <article className="find-tutor-card" key={tutor.id}>
+                      <div className="find-avatar">{tutor.initials}</div>
 
-                    <div className="find-tutor-info">
-                      <div className="find-tutor-name">
-                        <h3>{tutor.name}</h3>
-                        {tutor.verified ? (
-                          <span className="verified">✓ Verified</span>
-                        ) : (
-                          <span className="pending-badge">
-                            Verification pending
+                      <div className="find-tutor-info">
+                        <div className="find-tutor-name">
+                          <h3>{tutor.name}</h3>
+                          {tutor.verified ? (
+                            <span className="verified">✓ Verified</span>
+                          ) : (
+                            <span className="pending-badge">
+                              Verification pending
+                            </span>
+                          )}
+                        </div>
+
+                        <p className="find-subject">
+                          {(tutor.subjects || []).join(', ')} ·{' '}
+                          {(tutor.modes || []).join(' and ')}
+                        </p>
+
+                        <p className="find-description">{tutor.description}</p>
+
+                        <div className="find-meta">
+                          <span>
+                            ★ {tutor.rating} ({tutor.reviewsCount || tutor.reviews?.length || 0})
                           </span>
-                        )}
-                      </div>
+                          <span>{tutor.experience} years experience</span>
+                          <span>Next slot: {tutor.availability}</span>
+                        </div>
 
-                      <p className="find-subject">
-                        {tutor.subjects.join(', ')} ·{' '}
-                        {tutor.modes.join(' and ')}
-                      </p>
-
-                      <p className="find-description">{tutor.description}</p>
-
-                      <div className="find-meta">
-                        <span>
-                          ★ {tutor.rating} ({tutor.reviews})
-                        </span>
-                        <span>{tutor.experience} years experience</span>
-                        <span>Next slot: {tutor.availability}</span>
-                      </div>
-
-                      <p className="match-note">
-                        Subject, availability and price are shown to help you
-                        compare tutors.
-                      </p>
+                        <p className="match-note">
+                          Subject, availability and price are shown to help you
+                          compare tutors.
+                        </p>
 
                       <div className="find-card-actions">
                         <button
-                          type="button"
                           className="primary-btn"
-                          onClick={() => {
-                            console.log('Tutor:', tutor.name, 'ID:', tutor.id);
-                            navigate(`/tutors/${tutor.id}`);
-                          }}
+                          onClick={() => navigate(`/tutors/${tutor.id}`)}
                         >
                           View profile
                         </button>
 
-                        <button
-                          className="secondary-btn"
-                          onClick={() => toggleSaved(tutor.id)}
-                        >
-                          {saved.includes(tutor.id)
-                            ? '♥ Saved'
-                            : '♡ Save tutor'}
-                        </button>
+                          <button
+                            type="button"
+                            className="secondary-btn"
+                            onClick={() => toggleSaved(tutor.id, tutor.name)}
+                          >
+                            {saved ? '♥ Saved' : '♡ Save tutor'}
+                          </button>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="find-price">
-                      <strong>{tutor.price} ETB</strong>
-                      <span>per hour</span>
-                    </div>
-                  </article>
-                ))}
+                      <div className="find-price">
+                        <strong>{tutor.price} ETB</strong>
+                        <span>per hour</span>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             )}
           </section>
         </div>
       </main>
+
+      {/* Direct Chat Modal */}
+      {activeChatTutor && (
+        <ChatModal
+          tutor={activeChatTutor}
+          onClose={() => setActiveChatTutor(null)}
+        />
+      )}
     </div>
   );
 }

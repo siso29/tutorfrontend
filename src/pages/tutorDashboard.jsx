@@ -1,51 +1,33 @@
-import { useEffect, useState } from 'react';
+
+import { useState, useEffect } from 'react';
+import { useBookings } from '../context/BookingContext';
+import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
+import { tutorService } from '../services/tutorService';
+import { messageService } from '../services/messageService';
+import ChatModal from '../Components/ChatModal';
+
 import '../CssPages/TutorDashboard.css';
 
 function TutorDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
+  const { user } = useAuth();
+  const { bookings, updateBookingStatus } = useBookings();
+  const { inbox, addNotification, addToast } = useNotification();
 
-  const [sessions, setSessions] = useState([
-    {
-      id: 1,
-      learner: 'Abel Bekele',
-      subject: 'Mathematics',
-      date: 'Oct 12, 2026',
-      time: '10:00 AM',
-      status: 'Confirmed',
-    },
-    {
-      id: 2,
-      learner: 'Sara Bekele',
-      subject: 'Physics',
-      date: 'Oct 13, 2026',
-      time: '2:00 PM',
-      status: 'Pending',
-    },
-  ]);
-
-  const [requests, setRequests] = useState([
-    {
-      id: 1,
-      learner: 'Abel Bekele',
-      subject: 'Mathematics',
-      date: 'Oct 14, 2026',
-      time: '11:00 AM',
-    },
-    {
-      id: 2,
-      learner: 'Sara Bekele',
-      subject: 'Physics',
-      date: 'Oct 15, 2026',
-      time: '3:00 PM',
-    },
-  ]);
-
-  const [notifications, setNotifications] = useState([
-    'Your tutor profile is ready to manage.',
-    'You have two new booking requests.',
-    'Remember to update your weekly availability.',
-  ]);
-
+  // Tutor's current profile from tutorService
+  const [tutorData, setTutorData] = useState(null);
+  const [hourlyRate, setHourlyRate] = useState('320');
+  const [subjects, setSubjects] = useState('Physics, Chemistry');
+  const [bio, setBio] = useState(
+    'I help secondary school learners understand physics and chemistry through clear explanations, examples, and exam preparation.'
+  );
+  const [profileMessage, setProfileMessage] = useState('');
+  // Messages
+  const [conversations, setConversations] = useState(() =>
+    messageService.getConversations()
+  );
+  const [activeChatUser, setActiveChatUser] = useState(null);
   const [availability, setAvailability] = useState(() => {
     try {
       const savedAvailability = localStorage.getItem(
@@ -69,11 +51,6 @@ function TutorDashboard() {
       { day: 'Sunday', enabled: false },
     ];
   });
-  const [hourlyRate, setHourlyRate] = useState('500');
-  const [subjects, setSubjects] = useState('Mathematics, Physics');
-  const [bio, setBio] = useState(
-    'I help learners understand difficult concepts through clear explanations and practice.',
-  );
   useEffect(() => {
     try {
       const savedProfile = JSON.parse(
@@ -92,35 +69,43 @@ function TutorDashboard() {
       console.error('Could not load tutor profile:', error);
     }
   }, []);
-  const [profileMessage, setProfileMessage] = useState('');
 
-  function handleRequest(id, approved) {
-    const request = requests.find((item) => item.id === id);
+  useEffect(() => {
+    // Load tutor profile for Dawit Alemu (ID 5) or matching user
+    tutorService.getTutorById(5).then((data) => {
+      if (data) {
+        setTutorData(data);
+        setHourlyRate(String(data.price));
+        setSubjects((data.subjects || []).join(', '));
+        setBio(data.about || '');
+      }
+    });
+  }, []);
 
-    if (!request) return;
+  // Filter bookings for this tutor
+  const tutorSessions = bookings.filter((b) => b.status === 'Confirmed');
+  const pendingRequests = bookings.filter((b) => b.status === 'Pending');
 
-    if (approved) {
-      setSessions((previous) => [
-        ...previous,
-        {
-          ...request,
-          id: Date.now(),
-          status: 'Confirmed',
-        },
-      ]);
+  async function handleRequest(id, approved) {
+    const status = approved ? 'Confirmed' : 'Declined';
+    await updateBookingStatus(id, status);
+
+    const booking = bookings.find((b) => b.id === id);
+    if (booking) {
+      addToast(
+        `Session with ${booking.learnerName} has been ${approved ? 'accepted' : 'declined'}.`,
+        approved ? 'success' : 'info'
+      );
     }
-
-    setNotifications((previous) => [
-      `${request.subject} request from ${request.learner} was ${
-        approved ? 'accepted' : 'declined'
-      }.`,
-      ...previous,
-    ]);
-
-    setRequests((previous) => previous.filter((item) => item.id !== id));
   }
 
   function toggleAvailability(day) {
+    setAvailability((previous) =>
+      previous.map((item) =>
+        item.day === day ? { ...item, enabled: !item.enabled } : item
+      )
+    );
+    addToast(`Availability updated for ${day}.`, 'info');
     setAvailability((previous) => {
       const updatedAvailability = previous.map((item) =>
         item.day === day ? { ...item, enabled: !item.enabled } : item,
@@ -139,8 +124,20 @@ function TutorDashboard() {
     });
   }
 
-  function saveProfile(event) {
+  async function saveProfile(event) {
     event.preventDefault();
+    if (tutorData) {
+      const subjectArray = subjects.split(',').map((s) => s.trim());
+      const updated = await tutorService.updateTutor(tutorData.id, {
+        price: Number(hourlyRate),
+        subjects: subjectArray,
+        about: bio,
+        description: bio.slice(0, 120) + '...',
+      });
+      setTutorData(updated);
+    }
+    setProfileMessage('Your profile changes have been published across TutorConnect!');
+    addNotification('Tutor profile updated successfully.', 'success');
 
     const profile = {
       subjects,
@@ -167,42 +164,34 @@ function TutorDashboard() {
     <main className="tutor-dashboard">
       <aside className="tutor-sidebar">
         <h2>TutorConnect</h2>
-        <p className="tutor-sidebar-label">TUTOR PORTAL</p>
+        <p className="tutor-sidebar-label">TUTOR WORKSPACE</p>
 
         <button
-          className={
-            activeTab === 'overview' ? 'tutor-nav active' : 'tutor-nav'
-          }
+          className={activeTab === 'overview' ? 'tutor-nav active' : 'tutor-nav'}
           onClick={() => setActiveTab('overview')}
         >
           Overview
         </button>
 
         <button
-          className={
-            activeTab === 'sessions' ? 'tutor-nav active' : 'tutor-nav'
-          }
+          className={activeTab === 'sessions' ? 'tutor-nav active' : 'tutor-nav'}
           onClick={() => setActiveTab('sessions')}
         >
-          My Sessions
+          My Sessions ({tutorSessions.length})
         </button>
 
         <button
-          className={
-            activeTab === 'requests' ? 'tutor-nav active' : 'tutor-nav'
-          }
+          className={activeTab === 'requests' ? 'tutor-nav active' : 'tutor-nav'}
           onClick={() => setActiveTab('requests')}
         >
           Booking Requests
-          {requests.length > 0 && (
-            <span className="tutor-nav-count">{requests.length}</span>
+          {pendingRequests.length > 0 && (
+            <span className="tutor-nav-count">{pendingRequests.length}</span>
           )}
         </button>
 
         <button
-          className={
-            activeTab === 'availability' ? 'tutor-nav active' : 'tutor-nav'
-          }
+          className={activeTab === 'availability' ? 'tutor-nav active' : 'tutor-nav'}
           onClick={() => setActiveTab('availability')}
         >
           Availability
@@ -212,13 +201,18 @@ function TutorDashboard() {
           className={activeTab === 'profile' ? 'tutor-nav active' : 'tutor-nav'}
           onClick={() => setActiveTab('profile')}
         >
-          My Profile
+          Teaching Profile
         </button>
 
         <button
-          className={
-            activeTab === 'notifications' ? 'tutor-nav active' : 'tutor-nav'
-          }
+          className={activeTab === 'messages' ? 'tutor-nav active' : 'tutor-nav'}
+          onClick={() => setActiveTab('messages')}
+        >
+          Student Messages
+        </button>
+
+        <button
+          className={activeTab === 'notifications' ? 'tutor-nav active' : 'tutor-nav'}
           onClick={() => setActiveTab('notifications')}
         >
           Notifications
@@ -233,19 +227,20 @@ function TutorDashboard() {
               {activeTab === 'overview'
                 ? 'Tutor Dashboard'
                 : activeTab === 'sessions'
-                  ? 'My Sessions'
+                  ? 'My Scheduled Sessions'
                   : activeTab === 'requests'
-                    ? 'Booking Requests'
+                    ? 'Pending Booking Requests'
                     : activeTab === 'availability'
                       ? 'Manage Availability'
                       : activeTab === 'profile'
-                        ? 'My Profile'
-                        : 'Notifications'}
+                        ? 'My Teaching Profile'
+                        : activeTab === 'messages'
+                          ? 'Messages with Learners'
+                          : 'Notifications'}
             </h1>
-            <p>Manage your teaching activities in one place.</p>
+            <p>Welcome, {tutorData?.name || user?.name || 'Dawit Alemu'}. Manage your teaching activities in one place.</p>
           </div>
-
-          <div className="tutor-avatar">TA</div>
+          <div className="tutor-avatar">{tutorData?.initials || user?.avatar || 'DA'}</div>
         </header>
 
         {activeTab === 'overview' && (
@@ -253,8 +248,8 @@ function TutorDashboard() {
             <section className="tutor-welcome">
               <div>
                 <p>WELCOME BACK, TUTOR</p>
-                <h2>Make a difference in every lesson.</h2>
-                <span>Manage your sessions and help learners succeed.</span>
+                <h2>Inspire learning in every session.</h2>
+                <span>Respond to learner bookings and keep your calendar up to date.</span>
               </div>
               <span className="tutor-welcome-icon">🎓</span>
             </section>
@@ -262,91 +257,62 @@ function TutorDashboard() {
             <section className="tutor-stats">
               <article className="tutor-stat">
                 <span>Total Sessions</span>
-                <h2>{sessions.length}</h2>
-                <p>Scheduled sessions</p>
+                <h2>{tutorSessions.length}</h2>
+                <p>Scheduled & confirmed</p>
               </article>
 
               <article className="tutor-stat">
-                <span>Booking Requests</span>
-                <h2>{requests.length}</h2>
+                <span>New Requests</span>
+                <h2>{pendingRequests.length}</h2>
                 <p>Awaiting your response</p>
               </article>
 
               <article className="tutor-stat">
-                <span>Teaching Days</span>
+                <span>Available Days</span>
                 <h2>{availability.filter((day) => day.enabled).length}</h2>
-                <p>Available days per week</p>
+                <p>Open teaching days/wk</p>
               </article>
 
               <article className="tutor-stat">
                 <span>Hourly Rate</span>
-                <h2>{Number(hourlyRate || 0).toLocaleString()}</h2>
-                <p>Sample rate in ETB</p>
+                <h2>{hourlyRate} ETB</h2>
+                <p>Current session rate</p>
               </article>
             </section>
 
             <section className="tutor-panel">
               <div className="tutor-panel-heading">
                 <div>
-                  <h2>Upcoming Sessions</h2>
-                  <p>Keep track of your scheduled lessons.</p>
-                </div>
-                <button onClick={() => setActiveTab('sessions')}>
-                  View all
-                </button>
-              </div>
-
-              {sessions.length === 0 ? (
-                <p className="tutor-empty">No sessions scheduled yet.</p>
-              ) : (
-                sessions.map((session) => (
-                  <article className="tutor-session" key={session.id}>
-                    <div className="tutor-session-icon">📘</div>
-                    <div className="tutor-session-info">
-                      <h3>{session.subject}</h3>
-                      <p>Learner: {session.learner}</p>
-                      <span>
-                        {session.date} · {session.time}
-                      </span>
-                    </div>
-                    <span
-                      className={`tutor-status ${session.status.toLowerCase()}`}
-                    >
-                      {session.status}
-                    </span>
-                  </article>
-                ))
-              )}
-            </section>
-
-            <section className="tutor-panel">
-              <div className="tutor-panel-heading">
-                <div>
-                  <h2>New Booking Requests</h2>
-                  <p>Respond to learners who want your help.</p>
+                  <h2>Incoming Booking Requests</h2>
+                  <p>Accept or decline requests from students and parents.</p>
                 </div>
                 <button onClick={() => setActiveTab('requests')}>
-                  View requests
+                  View all ({pendingRequests.length})
                 </button>
               </div>
 
-              {requests.length === 0 ? (
-                <p className="tutor-empty">No pending booking requests.</p>
+              {pendingRequests.length === 0 ? (
+                <p className="tutor-empty">No pending booking requests right now.</p>
               ) : (
-                requests.map((request) => (
+                pendingRequests.map((request) => (
                   <article className="tutor-request" key={request.id}>
                     <div>
-                      <h3>{request.subject}</h3>
+                      <h3>{request.subject} · {request.learnerName}</h3>
                       <p>
-                        {request.learner} · {request.date} · {request.time}
+                        Scheduled: {request.date} at {request.time} ({request.duration} hrs · {request.mode})
                       </p>
+                      {request.message && (
+                        <p style={{ fontStyle: 'italic', color: '#64748b', marginTop: '4px' }}>
+                          Note: "{request.message}"
+                        </p>
+                      )}
                     </div>
                     <div className="tutor-request-actions">
                       <button
                         className="tutor-accept"
                         onClick={() => handleRequest(request.id, true)}
                       >
-                        Accept
+                        Accept Booking
                       </button>
                       <button
                         className="tutor-decline"
@@ -359,32 +325,67 @@ function TutorDashboard() {
                 ))
               )}
             </section>
+
+            <section className="tutor-panel">
+              <div className="tutor-panel-heading">
+                <div>
+                  <h2>Confirmed Sessions</h2>
+                  <p>Your upcoming lessons with students.</p>
+                </div>
+                <button onClick={() => setActiveTab('sessions')}>
+                  View all ({tutorSessions.length})
+                </button>
+              </div>
+
+              {tutorSessions.length === 0 ? (
+                <p className="tutor-empty">No sessions scheduled yet.</p>
+              ) : (
+                tutorSessions.map((session) => (
+                  <article className="tutor-session" key={session.id}>
+                    <div className="tutor-session-icon">📘</div>
+                    <div className="tutor-session-info">
+                      <h3>{session.subject} ({session.mode})</h3>
+                      <p>Learner: {session.learnerName} · Guardian: {session.guardianName}</p>
+                      <span>
+                        {session.date} · {session.time} · {session.total} ETB
+                      </span>
+                    </div>
+                    <span className="tutor-status confirmed">Confirmed</span>
+                  </article>
+                ))
+              )}
+            </section>
           </>
         )}
 
         {activeTab === 'sessions' && (
           <section className="tutor-panel">
-            <h2>My Sessions</h2>
-            <p>View your current scheduled tutoring sessions.</p>
+            <h2>My Scheduled Lessons</h2>
+            <p>All active confirmed sessions with learners.</p>
 
-            {sessions.length === 0 ? (
+            {tutorSessions.length === 0 ? (
               <p className="tutor-empty">No sessions scheduled yet.</p>
             ) : (
-              sessions.map((session) => (
+              tutorSessions.map((session) => (
                 <article className="tutor-session" key={session.id}>
                   <div className="tutor-session-icon">📘</div>
                   <div className="tutor-session-info">
-                    <h3>{session.subject}</h3>
-                    <p>Learner: {session.learner}</p>
+                    <h3>{session.subject} ({session.mode})</h3>
+                    <p>Student: {session.learnerName} · Grade: {session.grade}</p>
                     <span>
-                      {session.date} · {session.time}
+                      {session.date} · {session.time} · Total: {session.total} ETB
                     </span>
                   </div>
-                  <span
-                    className={`tutor-status ${session.status.toLowerCase()}`}
-                  >
-                    {session.status}
-                  </span>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <span className="tutor-status confirmed">Confirmed</span>
+                    <button
+                      className="primary-btn"
+                      style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+                      onClick={() => addToast(`Starting lesson classroom for ${session.learnerName}...`, 'info')}
+                    >
+                      Enter Classroom
+                    </button>
+                  </div>
                 </article>
               ))
             )}
@@ -394,25 +395,26 @@ function TutorDashboard() {
         {activeTab === 'requests' && (
           <section className="tutor-panel">
             <h2>Booking Requests</h2>
-            <p>Accept or decline the sample requests.</p>
+            <p>Review and confirm requests from learners.</p>
 
-            {requests.length === 0 ? (
-              <p className="tutor-empty">No pending requests.</p>
+            {pendingRequests.length === 0 ? (
+              <p className="tutor-empty">No pending requests at this time.</p>
             ) : (
-              requests.map((request) => (
+              pendingRequests.map((request) => (
                 <article className="tutor-request" key={request.id}>
                   <div>
-                    <h3>{request.subject}</h3>
+                    <h3>{request.subject} · {request.learnerName}</h3>
                     <p>
-                      {request.learner} · {request.date} · {request.time}
+                      {request.date} at {request.time} · {request.duration} hour(s) · {request.mode}
                     </p>
+                    <p>Total: {request.total} ETB</p>
                   </div>
                   <div className="tutor-request-actions">
                     <button
                       className="tutor-accept"
                       onClick={() => handleRequest(request.id, true)}
                     >
-                      Accept
+                      Accept Booking
                     </button>
                     <button
                       className="tutor-decline"
@@ -430,7 +432,7 @@ function TutorDashboard() {
         {activeTab === 'availability' && (
           <section className="tutor-panel">
             <h2>Weekly Availability</h2>
-            <p>Select the days when learners can request sessions.</p>
+            <p>Configure the days learners can select to book sessions with you.</p>
 
             <div className="tutor-availability-list">
               {availability.map((item) => (
@@ -451,16 +453,21 @@ function TutorDashboard() {
         {activeTab === 'profile' && (
           <section className="tutor-panel">
             <h2>My Teaching Profile</h2>
-            <p>Update the information learners see about you.</p>
+            <p>Updates made here are reflected on your public profile and search listings.</p>
 
             <form className="tutor-profile-form" onSubmit={saveProfile}>
               <label>
                 Tutor name
-                <input type="text" defaultValue="Tutor Alemu" />
+                <input
+                  type="text"
+                  value={tutorData?.name || 'Dawit Alemu'}
+                  disabled
+                  style={{ background: '#f8fafc', color: '#64748b' }}
+                />
               </label>
 
               <label>
-                Subjects you teach
+                Subjects you teach (comma separated)
                 <input
                   type="text"
                   value={subjects}
@@ -470,10 +477,11 @@ function TutorDashboard() {
               </label>
 
               <label>
-                Hourly rate (ETB)
+                Hourly rate in ETB
                 <input
                   type="number"
-                  min="1"
+                  min="50"
+                  step="10"
                   value={hourlyRate}
                   onChange={(event) => setHourlyRate(event.target.value)}
                   required
@@ -481,7 +489,7 @@ function TutorDashboard() {
               </label>
 
               <label>
-                Teaching introduction
+                Teaching bio & methodology
                 <textarea
                   value={bio}
                   onChange={(event) => setBio(event.target.value)}
@@ -491,7 +499,7 @@ function TutorDashboard() {
               </label>
 
               <button type="submit" className="tutor-save-button">
-                Save Profile
+                Save & Publish Profile Changes
               </button>
 
               {profileMessage && (
@@ -501,24 +509,59 @@ function TutorDashboard() {
           </section>
         )}
 
+        {activeTab === 'messages' && (
+          <section className="tutor-panel">
+            <h2>Student & Parent Inquiries</h2>
+            <p>Direct communication regarding lesson preparation.</p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+              {conversations.map((conv) => (
+                <article
+                  key={conv.id}
+                  className="tutor-session"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => setActiveChatUser({ id: conv.userId, name: conv.userName })}
+                >
+                  <div className="tutor-session-icon">💬</div>
+                  <div className="tutor-session-info">
+                    <h3>{conv.userName}</h3>
+                    <p>Last message: "{conv.lastMessage}"</p>
+                    <span>{conv.lastMessageTime}</span>
+                  </div>
+                  <button className="primary-btn" style={{ fontSize: '0.82rem', padding: '6px 14px' }}>
+                    Reply
+                  </button>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+
         {activeTab === 'notifications' && (
           <section className="tutor-panel">
             <h2>Notifications</h2>
-            <p>Updates about your tutoring activities.</p>
+            <p>Recent platform alerts and student activities.</p>
 
-            {notifications.length === 0 ? (
-              <p className="tutor-empty">No notifications.</p>
-            ) : (
-              notifications.map((notification, index) => (
-                <article className="tutor-notification" key={index}>
-                  <span>🔔</span>
-                  <p>{notification}</p>
-                </article>
-              ))
-            )}
+            {inbox.map((notification) => (
+              <article className="tutor-notification" key={notification.id}>
+                <span>🔔</span>
+                <p>{notification.text}</p>
+              </article>
+            ))}
           </section>
         )}
       </section>
+
+      {/* Reply Chat Modal */}
+      {activeChatUser && (
+        <ChatModal
+          tutor={{ id: 5, name: 'Dawit Alemu' }}
+          onClose={() => {
+            setActiveChatUser(null);
+            setConversations(messageService.getConversations());
+          }}
+        />
+      )}
     </main>
   );
 }
