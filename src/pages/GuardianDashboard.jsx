@@ -33,53 +33,64 @@ function GuardianDashboard() {
     },
   ]);
 
-  const [showAddLearner, setShowAddLearner] = useState(false);
-  const [newLearnerName, setNewLearnerName] = useState('');
-  const [newLearnerGrade, setNewLearnerGrade] = useState('Grade 7');
-  const [newLearnerSubjects, setNewLearnerSubjects] = useState('Mathematics');
+  const sessions = [
+    {
+      id: 1,
+      learner: 'Abel Bekele',
+      tutor: 'Dawit Alemu',
+      subject: 'Mathematics',
+      date: 'Oct 12, 2026',
+      time: '10:00 AM',
+      status: 'Confirmed',
+    },
+    {
+      id: 2,
+      learner: 'Sara Bekele',
+      tutor: 'Mekdes Tesfaye',
+      subject: 'English',
+      date: 'Oct 13, 2026',
+      time: '2:00 PM',
+      status: 'Pending',
+    },
+  ];
 
-  // Messages & Chat state
-  const [conversations, setConversations] = useState(() =>
-    messageService.getConversations()
-  );
-  const [activeChatTutor, setActiveChatTutor] = useState(null);
+  const [requests, setRequests] = useState([
+    {
+      id: 1,
+      learner: 'Abel Bekele',
+      tutor: 'Dawit Alemu',
+      subject: 'Mathematics',
+    },
+    {
+      id: 2,
+      learner: 'Sara Bekele',
+      tutor: 'Mekdes Tesfaye',
+      subject: 'English',
+    },
+  ]);
 
-  // Filter bookings for this guardian / learner
-  const confirmedSessions = bookings.filter((b) => b.status === 'Confirmed');
-  const pendingRequests = bookings.filter((b) => b.status === 'Pending');
+  const [notifications, setNotifications] = useState([
+    'Your Mathematics session has been confirmed.',
+    'A new English tutoring request is awaiting approval.',
+    "Remember to review your learner's weekly progress.",
+  ]);
 
-  // Saved tutors list
-  const allTutors = tutorService.getSavedTutorIds
-    ? tutorService.getSavedTutorIds()
-    : [];
-  const [tutorList, setTutorList] = useState([]);
+  function handleRequest(id, approved) {
+    const request = requests.find((item) => item.id === id);
 
-  useState(() => {
-    tutorService.getAllTutors().then((list) => setTutorList(list));
-  });
+    if (approved && request) {
+      setNotifications((previous) => [
+        `${request.subject} booking for ${request.learner} approved.`,
+        ...previous,
+      ]);
+    } else if (request) {
+      setNotifications((previous) => [
+        `${request.subject} booking for ${request.learner} declined.`,
+        ...previous,
+      ]);
+    }
 
-  const favoritedTutors = tutorList.filter((t) => savedIds.includes(t.id));
-
-  function handleRequestAction(id, approved) {
-    const newStatus = approved ? 'Confirmed' : 'Cancelled';
-    updateBookingStatus(id, newStatus);
-  }
-
-  function handleAddLearner(e) {
-    e.preventDefault();
-    if (!newLearnerName.trim()) return;
-
-    const newChild = {
-      id: Date.now(),
-      name: newLearnerName.trim(),
-      grade: newLearnerGrade,
-      subjects: newLearnerSubjects.trim(),
-    };
-
-    setLearners((prev) => [...prev, newChild]);
-    addNotification(`Added new learner profile for ${newChild.name}`, 'success');
-    setNewLearnerName('');
-    setShowAddLearner(false);
+    setRequests((previous) => previous.filter((item) => item.id !== id));
   }
 
   return (
@@ -250,16 +261,21 @@ function GuardianDashboard() {
                     <div>
                       <h3>{req.subject} · {req.tutorName}</h3>
                       <p>
-                        For {req.learnerName} on {req.date} at {req.time} ({req.mode})
+                        {request.learner} · {request.tutor}
                       </p>
                     </div>
                     <div className="guardian-request-actions">
-                      <span className="guardian-status pending">Pending Tutor</span>
+                      <button
+                        className="guardian-approve"
+                        onClick={() => handleRequest(request.id, true)}
+                      >
+                        Approve
+                      </button>
                       <button
                         className="guardian-decline"
-                        onClick={() => handleRequestAction(req.id, false)}
+                        onClick={() => handleRequest(request.id, false)}
                       >
-                        Cancel Request
+                        Decline
                       </button>
                     </div>
                   </article>
@@ -405,16 +421,21 @@ function GuardianDashboard() {
                   <div>
                     <h3>{request.subject} · {request.tutorName}</h3>
                     <p>
-                      {request.learnerName} · Scheduled: {request.date} at {request.time} ({request.total} ETB)
+                      {request.learner} · {request.tutor}
                     </p>
                   </div>
                   <div className="guardian-request-actions">
-                    <span className="guardian-status pending">Pending Tutor Approval</span>
+                    <button
+                      className="guardian-approve"
+                      onClick={() => handleRequest(request.id, true)}
+                    >
+                      Approve
+                    </button>
                     <button
                       className="guardian-decline"
-                      onClick={() => handleRequestAction(request.id, false)}
+                      onClick={() => handleRequest(request.id, false)}
                     >
-                      Cancel Request
+                      Decline
                     </button>
                   </div>
                 </article>

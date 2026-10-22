@@ -86,6 +86,31 @@ function TutorProfile() {
       return;
     }
 
+    const booking = {
+      id: Date.now(),
+      tutorId: id,
+      tutorName: tutor.name,
+      subject: tutor.subjects?.[0] || 'Tutoring',
+      learner: `Grade ${learnerGrade} learner`,
+      learnerGrade,
+      selectedDay,
+      selectedTime,
+      mode,
+      duration,
+      total,
+      learnerMessage,
+      status: 'Pending',
+    };
+
+    const existingBookings = JSON.parse(
+      sessionStorage.getItem('tutorConnectBookings') || '[]',
+    );
+
+    sessionStorage.setItem(
+      'tutorConnectBookings',
+      JSON.stringify([...existingBookings, booking]),
+    );
+
     navigate('/booking-confirmation', {
       state: {
         tutorId: tutor.id,

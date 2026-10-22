@@ -286,13 +286,13 @@ function FindTutors() {
                           compare tutors.
                         </p>
 
-                        <div className="find-card-actions">
-                          <button
-                            className="primary-btn"
-                            onClick={() => navigate(`/tutors/${tutor.id}`)}
-                          >
-                            View profile
-                          </button>
+                      <div className="find-card-actions">
+                        <button
+                          className="primary-btn"
+                          onClick={() => navigate(`/tutors/${tutor.id}`)}
+                        >
+                          View profile
+                        </button>
 
                           <button
                             type="button"

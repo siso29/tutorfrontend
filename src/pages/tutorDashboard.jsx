@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useBookings } from '../context/BookingContext';
 import { useAuth } from '../context/AuthContext';
@@ -5,6 +6,7 @@ import { useNotification } from '../context/NotificationContext';
 import { tutorService } from '../services/tutorService';
 import { messageService } from '../services/messageService';
 import ChatModal from '../Components/ChatModal';
+
 import '../CssPages/TutorDashboard.css';
 
 function TutorDashboard() {
@@ -21,22 +23,52 @@ function TutorDashboard() {
     'I help secondary school learners understand physics and chemistry through clear explanations, examples, and exam preparation.'
   );
   const [profileMessage, setProfileMessage] = useState('');
-
-  const [availability, setAvailability] = useState([
-    { day: 'Monday', enabled: true },
-    { day: 'Tuesday', enabled: true },
-    { day: 'Wednesday', enabled: false },
-    { day: 'Thursday', enabled: true },
-    { day: 'Friday', enabled: true },
-    { day: 'Saturday', enabled: true },
-    { day: 'Sunday', enabled: false },
-  ]);
-
   // Messages
   const [conversations, setConversations] = useState(() =>
     messageService.getConversations()
   );
   const [activeChatUser, setActiveChatUser] = useState(null);
+  const [availability, setAvailability] = useState(() => {
+    try {
+      const savedAvailability = localStorage.getItem(
+        'tutorConnectAvailability',
+      );
+
+      if (savedAvailability) {
+        return JSON.parse(savedAvailability);
+      }
+    } catch (error) {
+      console.error('Could not load availability:', error);
+    }
+
+    return [
+      { day: 'Monday', enabled: true },
+      { day: 'Tuesday', enabled: true },
+      { day: 'Wednesday', enabled: false },
+      { day: 'Thursday', enabled: true },
+      { day: 'Friday', enabled: true },
+      { day: 'Saturday', enabled: false },
+      { day: 'Sunday', enabled: false },
+    ];
+  });
+  useEffect(() => {
+    try {
+      const savedProfile = JSON.parse(
+        localStorage.getItem('tutorConnectProfile') || 'null',
+      );
+
+      if (savedProfile) {
+        setHourlyRate(savedProfile.hourlyRate ?? '500');
+        setSubjects(savedProfile.subjects ?? 'Mathematics, Physics');
+        setBio(
+          savedProfile.bio ??
+            'I help learners understand difficult concepts through clear explanations and practice.',
+        );
+      }
+    } catch (error) {
+      console.error('Could not load tutor profile:', error);
+    }
+  }, []);
 
   useEffect(() => {
     // Load tutor profile for Dawit Alemu (ID 5) or matching user
@@ -74,6 +106,22 @@ function TutorDashboard() {
       )
     );
     addToast(`Availability updated for ${day}.`, 'info');
+    setAvailability((previous) => {
+      const updatedAvailability = previous.map((item) =>
+        item.day === day ? { ...item, enabled: !item.enabled } : item,
+      );
+
+      try {
+        localStorage.setItem(
+          'tutorConnectAvailability',
+          JSON.stringify(updatedAvailability),
+        );
+      } catch (error) {
+        console.error('Could not save availability:', error);
+      }
+
+      return updatedAvailability;
+    });
   }
 
   async function saveProfile(event) {
@@ -90,6 +138,26 @@ function TutorDashboard() {
     }
     setProfileMessage('Your profile changes have been published across TutorConnect!');
     addNotification('Tutor profile updated successfully.', 'success');
+
+    const profile = {
+      subjects,
+      hourlyRate,
+      bio,
+    };
+
+    try {
+      localStorage.setItem('tutorConnectProfile', JSON.stringify(profile));
+
+      setProfileMessage('Your profile has been saved successfully.');
+
+      setNotifications((previous) => [
+        'You updated your tutor profile.',
+        ...previous,
+      ]);
+    } catch (error) {
+      setProfileMessage('Could not save your profile. Please try again.');
+      console.error('Could not save tutor profile:', error);
+    }
   }
 
   return (
