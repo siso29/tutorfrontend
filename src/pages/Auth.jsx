@@ -1,6 +1,7 @@
 import { useState } from 'react';
-
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import '../CssPages/Auth.css';
 
 function Auth() {
@@ -8,22 +9,62 @@ function Auth() {
   const [message, setMessage] = useState('');
   const location = useLocation();
   const navigate = useNavigate();
+  const { login, register, loading } = useAuth();
+  const { addToast } = useNotification();
 
   const [isLogin, setIsLogin] = useState(location.pathname !== '/register');
 
   const switchMode = (loginMode) => {
     setIsLogin(loginMode);
+    setMessage('');
     navigate(loginMode ? '/login' : '/register');
   };
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
+    setMessage('');
 
-    setMessage(
-      isLogin
-        ? 'Demo only: real login will work after we connect the backend.'
-        : 'Demo only: account registration will work after we connect the backend.',
-    );
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+
+    const email = formData.get('email')?.toString().trim();
+    const password = formData.get('password')?.toString();
+    const fullName = formData.get('fullName')?.toString().trim();
+    const confirmPassword = formData.get('confirmPassword')?.toString();
+
+    if (!isLogin && password !== confirmPassword) {
+      setMessage('Passwords do not match.');
+      return;
+    }
+
+    try {
+      if (isLogin) {
+        const result = await login(email, password);
+        addToast(`Welcome back, ${result.user.name}!`, 'success');
+        if (result.user.role === 'tutor') {
+          navigate('/tutor-dashboard');
+        } else if (result.user.role === 'admin') {
+          navigate('/admin-dashboard');
+        } else {
+          navigate('/guardian-dashboard');
+        }
+      } else {
+        const result = await register({
+          fullName,
+          email,
+          password,
+          role,
+        });
+        addToast(`Account created successfully for ${result.user.name}!`, 'success');
+        if (result.user.role === 'tutor') {
+          navigate('/tutor-dashboard');
+        } else {
+          navigate('/guardian-dashboard');
+        }
+      }
+    } catch (error) {
+      setMessage(error.message || 'Authentication failed. Please try again.');
+    }
   }
 
   return (
@@ -96,8 +137,10 @@ function Auth() {
               <label>
                 Full name
                 <input
+                  name="fullName"
                   type="text"
                   placeholder="Enter your full name"
+                  autoComplete="name"
                   required
                 />
               </label>
@@ -105,15 +148,23 @@ function Auth() {
 
             <label>
               Email address
-              <input type="email" placeholder="you@example.com" required />
+              <input
+                name="email"
+                type="email"
+                placeholder="you@example.com"
+                autoComplete="email"
+                required
+              />
             </label>
 
             <label>
               Password
               <input
+                name="password"
                 type="password"
                 placeholder="Enter your password"
-                minLength={8}
+                autoComplete={isLogin ? 'current-password' : 'new-password'}
+                minLength={6}
                 required
               />
             </label>
@@ -123,9 +174,11 @@ function Auth() {
                 <label>
                   Confirm password
                   <input
+                    name="confirmPassword"
                     type="password"
                     placeholder="Confirm your password"
-                    minLength={8}
+                    autoComplete="new-password"
+                    minLength={6}
                     required
                   />
                 </label>
@@ -147,7 +200,7 @@ function Auth() {
             {isLogin && (
               <div className="auth-options">
                 <label className="auth-remember">
-                  <input type="checkbox" />
+                  <input type="checkbox" defaultChecked />
                   Remember me
                 </label>
 
@@ -156,7 +209,7 @@ function Auth() {
                   className="auth-text-button"
                   onClick={() =>
                     setMessage(
-                      'Password recovery will be available after backend setup.',
+                      'Password recovery will be available after backend setup.'
                     )
                   }
                 >
@@ -165,8 +218,12 @@ function Auth() {
               </div>
             )}
 
-            <button type="submit" className="auth-submit">
-              {isLogin ? 'Login to Account' : 'Create My Account'}
+            <button type="submit" className="auth-submit" disabled={loading}>
+              {loading
+                ? 'Processing...'
+                : isLogin
+                  ? 'Login to Account'
+                  : 'Create My Account'}
             </button>
 
             {message && (

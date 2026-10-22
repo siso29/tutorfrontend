@@ -1,99 +1,46 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { tutorService } from '../services/tutorService';
+import { supportService } from '../services/supportService';
+import { useBookings } from '../context/BookingContext';
+import { useNotification } from '../context/NotificationContext';
 import '../CssPages/AdminDashboard.css';
 
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
+  const { bookings, updateBookingStatus } = useBookings();
+  const { addToast } = useNotification();
 
-  const [tutors, setTutors] = useState([
-    {
-      id: 1,
-      name: 'Dawit Alemu',
-      subject: 'Mathematics',
-      email: 'dawit@example.com',
-      status: 'Pending',
-    },
-    {
-      id: 2,
-      name: 'Mekdes Tesfaye',
-      subject: 'English',
-      email: 'mekdes@example.com',
-      status: 'Pending',
-    },
-    {
-      id: 3,
-      name: 'Samuel Bekele',
-      subject: 'Physics',
-      email: 'samuel@example.com',
-      status: 'Verified',
-    },
-  ]);
-
+  const [tutors, setTutors] = useState([]);
   const [users, setUsers] = useState([
     { id: 1, name: 'Abel Bekele', role: 'Learner', status: 'Active' },
     { id: 2, name: 'Sara Bekele', role: 'Learner', status: 'Active' },
     { id: 3, name: 'Dawit Alemu', role: 'Tutor', status: 'Active' },
-    { id: 4, name: 'Mekdes Tesfaye', role: 'Tutor', status: 'Active' },
+    { id: 4, name: 'Hanna Tesfaye', role: 'Tutor', status: 'Active' },
+    { id: 5, name: 'Biruk Tadesse', role: 'Tutor', status: 'Active' },
   ]);
 
-  const [bookings, setBookings] = useState([
-    {
-      id: 1,
-      learner: 'Abel Bekele',
-      tutor: 'Samuel Bekele',
-      subject: 'Physics',
-      date: 'Oct 12, 2026',
-      status: 'Confirmed',
-    },
-    {
-      id: 2,
-      learner: 'Sara Bekele',
-      tutor: 'Mekdes Tesfaye',
-      subject: 'English',
-      date: 'Oct 13, 2026',
-      status: 'Pending',
-    },
-    {
-      id: 3,
-      learner: 'Abel Bekele',
-      tutor: 'Dawit Alemu',
-      subject: 'Mathematics',
-      date: 'Oct 14, 2026',
-      status: 'Completed',
-    },
-  ]);
-
-  const [reports, setReports] = useState([
-    {
-      id: 1,
-      title: 'Missed tutoring session',
-      submittedBy: 'Abel Bekele',
-      status: 'Open',
-    },
-    {
-      id: 2,
-      title: 'Incorrect booking details',
-      submittedBy: 'Sara Bekele',
-      status: 'Open',
-    },
-  ]);
-
+  const [reports, setReports] = useState(() => supportService.getReports());
+  const [inquiries, setInquiries] = useState(() => supportService.getInquiries());
   const [notice, setNotice] = useState('');
 
-  function verifyTutor(id, approved) {
-    const tutor = tutors.find((item) => item.id === id);
-    if (!tutor) return;
+  const loadTutors = useCallback(async () => {
+    const list = await tutorService.getAllTutors();
+    setTutors(list);
+  }, []);
 
-    setTutors((previous) =>
-      previous.map((item) =>
-        item.id === id
-          ? { ...item, status: approved ? 'Verified' : 'Rejected' }
-          : item,
-      ),
-    );
+  useEffect(() => {
+    loadTutors();
+  }, [loadTutors]);
 
-    setNotice(
-      `${tutor.name}'s application was ${approved ? 'approved' : 'rejected'}.`,
-    );
+  async function handleVerifyTutor(id, approved) {
+    const status = approved ? 'Verified' : 'Rejected';
+    await tutorService.verifyTutor(id, status);
+    await loadTutors();
+
+    const tutor = tutors.find((t) => t.id === id);
+    const msg = `${tutor?.name || 'Tutor'}'s application was ${approved ? 'approved' : 'rejected'}.`;
+    setNotice(msg);
+    addToast(msg, approved ? 'success' : 'info');
   }
 
   function toggleUser(id) {
@@ -104,36 +51,38 @@ function AdminDashboard() {
 
     setUsers((previous) =>
       previous.map((item) =>
-        item.id === id ? { ...item, status: newStatus } : item,
-      ),
+        item.id === id ? { ...item, status: newStatus } : item
+      )
     );
 
-    setNotice(`${user.name}'s account is now ${newStatus.toLowerCase()}.`);
+    const msg = `${user.name}'s account is now ${newStatus.toLowerCase()}.`;
+    setNotice(msg);
+    addToast(msg, 'info');
   }
 
-  function updateBooking(id, status) {
-    setBookings((previous) =>
-      previous.map((item) => (item.id === id ? { ...item, status } : item)),
-    );
-    setNotice(`Booking #${id} updated to ${status.toLowerCase()}.`);
+  async function handleUpdateBooking(id, status) {
+    await updateBookingStatus(id, status);
+    const msg = `Booking #${id.slice(-4)} marked as ${status.toLowerCase()}.`;
+    setNotice(msg);
+    addToast(msg, 'info');
   }
 
-  function resolveReport(id) {
-    setReports((previous) =>
-      previous.map((item) =>
-        item.id === id ? { ...item, status: 'Resolved' } : item,
-      ),
-    );
-    setNotice('Report marked as resolved.');
+  function handleResolveReport(id) {
+    const updated = supportService.resolveReport(id);
+    setReports(updated);
+    addToast('Report marked as resolved.', 'success');
   }
 
-  const pendingTutors = tutors.filter(
-    (tutor) => tutor.status === 'Pending',
-  ).length;
+  function handleResolveInquiry(id) {
+    const updated = supportService.resolveInquiry(id);
+    setInquiries(updated);
+    addToast('Contact inquiry resolved.', 'success');
+  }
 
+  const pendingTutors = tutors.filter((t) => !t.verified);
   const activeBookings = bookings.filter(
-    (booking) => booking.status === 'Pending' || booking.status === 'Confirmed',
-  ).length;
+    (b) => b.status === 'Pending' || b.status === 'Confirmed'
+  );
 
   return (
     <main className="admin-dashboard">
@@ -143,10 +92,11 @@ function AdminDashboard() {
 
         {[
           ['overview', 'Overview'],
-          ['tutors', 'Tutor Verification'],
+          ['tutors', `Tutor Verification (${pendingTutors.length})`],
           ['users', 'User Management'],
-          ['bookings', 'Booking Management'],
-          ['reports', 'Complaints & Reports'],
+          ['bookings', `All Bookings (${bookings.length})`],
+          ['inquiries', `Support Inquiries (${inquiries.filter((i) => i.status === 'Open').length})`],
+          ['reports', `Reports (${reports.filter((r) => r.status === 'Open').length})`],
           ['settings', 'Platform Settings'],
         ].map(([tab, label]) => (
           <button
@@ -167,14 +117,15 @@ function AdminDashboard() {
           <div>
             <p className="admin-eyebrow">PLATFORM ADMINISTRATION</p>
             <h1>
-              {activeTab === 'overview' && 'Admin Dashboard'}
-              {activeTab === 'tutors' && 'Tutor Verification'}
-              {activeTab === 'users' && 'User Management'}
+              {activeTab === 'overview' && 'Admin Overview'}
+              {activeTab === 'tutors' && 'Tutor Applications & Verification'}
+              {activeTab === 'users' && 'User Account Management'}
               {activeTab === 'bookings' && 'Booking Management'}
-              {activeTab === 'reports' && 'Complaints & Reports'}
+              {activeTab === 'inquiries' && 'Contact & Support Inquiries'}
+              {activeTab === 'reports' && 'Complaints & Incident Reports'}
               {activeTab === 'settings' && 'Platform Settings'}
             </h1>
-            <p>Monitor and manage the TutorConnect platform.</p>
+            <p>Monitor, verify tutors, and oversee the TutorConnect platform.</p>
           </div>
           <div className="admin-avatar">AD</div>
         </header>
@@ -192,7 +143,7 @@ function AdminDashboard() {
               <p>ADMINISTRATOR WORKSPACE</p>
               <h2>Welcome to TutorConnect administration.</h2>
               <span>
-                Review tutor applications, monitor bookings, and support users.
+                Review applications, monitor bookings, resolve complaints, and support users.
               </span>
             </section>
 
@@ -200,21 +151,21 @@ function AdminDashboard() {
               <article className="admin-stat">
                 <span>Total Users</span>
                 <h2>{users.length}</h2>
-                <p>Learners and tutors</p>
+                <p>Learners & tutors</p>
               </article>
               <article className="admin-stat">
                 <span>Verified Tutors</span>
-                <h2>{tutors.filter((t) => t.status === 'Verified').length}</h2>
-                <p>Approved tutor profiles</p>
+                <h2>{tutors.filter((t) => t.verified).length}</h2>
+                <p>Approved profiles</p>
               </article>
               <article className="admin-stat">
-                <span>Pending Applications</span>
-                <h2>{pendingTutors}</h2>
-                <p>Require review</p>
+                <span>Pending Approvals</span>
+                <h2>{pendingTutors.length}</h2>
+                <p>Requires admin review</p>
               </article>
               <article className="admin-stat">
                 <span>Active Bookings</span>
-                <h2>{activeBookings}</h2>
+                <h2>{activeBookings.length}</h2>
                 <p>Pending or confirmed</p>
               </article>
             </section>
@@ -222,52 +173,63 @@ function AdminDashboard() {
             <section className="admin-panel">
               <div className="admin-panel-heading">
                 <div>
-                  <h2>Tutor Applications</h2>
-                  <p>Review tutors waiting for verification.</p>
+                  <h2>Pending Tutor Applications</h2>
+                  <p>Tutors awaiting background and credential verification.</p>
                 </div>
-                <button onClick={() => setActiveTab('tutors')}>View all</button>
+                <button onClick={() => setActiveTab('tutors')}>View all ({pendingTutors.length})</button>
               </div>
 
-              {tutors.filter((t) => t.status === 'Pending').length === 0 ? (
-                <p className="admin-empty">No applications awaiting review.</p>
+              {pendingTutors.length === 0 ? (
+                <p className="admin-empty">No applications currently awaiting review.</p>
               ) : (
-                tutors
-                  .filter((t) => t.status === 'Pending')
-                  .map((tutor) => (
-                    <article className="admin-list-row" key={tutor.id}>
-                      <div className="admin-row-info">
-                        <h3>{tutor.name}</h3>
-                        <p>
-                          {tutor.subject} · {tutor.email}
-                        </p>
-                      </div>
-                      <span className="admin-status pending">Pending</span>
-                    </article>
-                  ))
+                pendingTutors.map((tutor) => (
+                  <article className="admin-list-row" key={tutor.id}>
+                    <div className="admin-row-info">
+                      <h3>{tutor.name}</h3>
+                      <p>
+                        Subjects: {(tutor.subjects || []).join(', ')} · Rate: {tutor.price} ETB
+                      </p>
+                    </div>
+                    <div className="admin-actions">
+                      <button
+                        className="admin-approve"
+                        onClick={() => handleVerifyTutor(tutor.id, true)}
+                      >
+                        Approve & Verify
+                      </button>
+                      <button
+                        className="admin-reject"
+                        onClick={() => handleVerifyTutor(tutor.id, false)}
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </article>
+                ))
               )}
             </section>
 
             <section className="admin-panel">
               <div className="admin-panel-heading">
                 <div>
-                  <h2>Recent Bookings</h2>
-                  <p>Check current tutoring activity.</p>
+                  <h2>Recent Platform Bookings</h2>
+                  <p>All active sessions across tutors and learners.</p>
                 </div>
                 <button onClick={() => setActiveTab('bookings')}>
-                  View all
+                  View all ({bookings.length})
                 </button>
               </div>
 
-              {bookings.slice(0, 3).map((booking) => (
+              {bookings.slice(0, 4).map((booking) => (
                 <article className="admin-list-row" key={booking.id}>
                   <div className="admin-row-info">
-                    <h3>{booking.subject}</h3>
+                    <h3>{booking.subject} ({booking.mode})</h3>
                     <p>
-                      {booking.learner} with {booking.tutor} · {booking.date}
+                      {booking.learnerName} with {booking.tutorName} · {booking.date} at {booking.time}
                     </p>
                   </div>
                   <span
-                    className={`admin-status ${booking.status.toLowerCase()}`}
+                    className={`admin-status ${booking.status?.toLowerCase() || 'pending'}`}
                   >
                     {booking.status}
                   </span>
@@ -279,39 +241,53 @@ function AdminDashboard() {
 
         {activeTab === 'tutors' && (
           <section className="admin-panel">
-            <h2>Review Tutor Applications</h2>
-            <p>Approve or reject sample tutor applications.</p>
+            <h2>Tutor Applications & Verification</h2>
+            <p>Review credentials and verify or revoke verification badges.</p>
 
             {tutors.map((tutor) => (
               <article className="admin-list-row" key={tutor.id}>
                 <div className="admin-row-info">
-                  <h3>{tutor.name}</h3>
+                  <h3>
+                    {tutor.name}{' '}
+                    {tutor.verified ? (
+                      <span className="admin-status verified">✓ Verified</span>
+                    ) : (
+                      <span className="admin-status pending">Pending Review</span>
+                    )}
+                  </h3>
                   <p>
-                    {tutor.subject} · {tutor.email}
+                    {(tutor.subjects || []).join(', ')} · {tutor.price} ETB/hr · {tutor.experience} yrs exp
                   </p>
-                  <span
-                    className={`admin-status ${tutor.status.toLowerCase()}`}
-                  >
-                    {tutor.status}
-                  </span>
+                  <p style={{ fontSize: '0.82rem', color: '#64748b' }}>
+                    Credentials: {(tutor.qualifications || []).join(' | ')}
+                  </p>
                 </div>
 
-                {tutor.status === 'Pending' && (
-                  <div className="admin-actions">
-                    <button
-                      className="admin-approve"
-                      onClick={() => verifyTutor(tutor.id, true)}
-                    >
-                      Approve
-                    </button>
+                <div className="admin-actions">
+                  {!tutor.verified ? (
+                    <>
+                      <button
+                        className="admin-approve"
+                        onClick={() => handleVerifyTutor(tutor.id, true)}
+                      >
+                        Verify Tutor ✓
+                      </button>
+                      <button
+                        className="admin-reject"
+                        onClick={() => handleVerifyTutor(tutor.id, false)}
+                      >
+                        Reject
+                      </button>
+                    </>
+                  ) : (
                     <button
                       className="admin-reject"
-                      onClick={() => verifyTutor(tutor.id, false)}
+                      onClick={() => handleVerifyTutor(tutor.id, false)}
                     >
-                      Reject
+                      Revoke Verification
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </article>
             ))}
           </section>
@@ -319,14 +295,14 @@ function AdminDashboard() {
 
         {activeTab === 'users' && (
           <section className="admin-panel">
-            <h2>Registered Users</h2>
-            <p>Manage the sample learner and tutor accounts.</p>
+            <h2>User Account Management</h2>
+            <p>Oversee registered learner and tutor accounts.</p>
 
             {users.map((user) => (
               <article className="admin-list-row" key={user.id}>
                 <div className="admin-row-info">
                   <h3>{user.name}</h3>
-                  <p>{user.role}</p>
+                  <p>Role: {user.role}</p>
                   <span className={`admin-status ${user.status.toLowerCase()}`}>
                     {user.status}
                   </span>
@@ -337,7 +313,7 @@ function AdminDashboard() {
                   }
                   onClick={() => toggleUser(user.id)}
                 >
-                  {user.status === 'Active' ? 'Suspend' : 'Reactivate'}
+                  {user.status === 'Active' ? 'Suspend Account' : 'Reactivate'}
                 </button>
               </article>
             ))}
@@ -346,66 +322,103 @@ function AdminDashboard() {
 
         {activeTab === 'bookings' && (
           <section className="admin-panel">
-            <h2>All Bookings</h2>
-            <p>Monitor booking status in the demo platform.</p>
+            <h2>All Platform Bookings</h2>
+            <p>Manage lesson progress and dispute resolutions.</p>
 
             {bookings.map((booking) => (
               <article className="admin-list-row" key={booking.id}>
                 <div className="admin-row-info">
-                  <h3>{booking.subject}</h3>
+                  <h3>{booking.subject} · {booking.total} ETB</h3>
                   <p>
-                    {booking.learner} with {booking.tutor}
+                    Student: {booking.learnerName} · Tutor: {booking.tutorName}
                   </p>
-                  <p>{booking.date}</p>
-                  <span
-                    className={`admin-status ${booking.status.toLowerCase()}`}
-                  >
+                  <p style={{ fontSize: '0.82rem', color: '#64748b' }}>
+                    Date: {booking.date} · Time: {booking.time} · Mode: {booking.mode}
+                  </p>
+                  <span className={`admin-status ${booking.status?.toLowerCase() || 'pending'}`}>
                     {booking.status}
                   </span>
                 </div>
 
-                {booking.status !== 'Completed' &&
-                  booking.status !== 'Cancelled' && (
-                    <div className="admin-actions">
-                      <button
-                        className="admin-approve"
-                        onClick={() => updateBooking(booking.id, 'Completed')}
-                      >
-                        Complete
-                      </button>
-                      <button
-                        className="admin-reject"
-                        onClick={() => updateBooking(booking.id, 'Cancelled')}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  )}
+                {booking.status !== 'Completed' && booking.status !== 'Cancelled' && (
+                  <div className="admin-actions">
+                    <button
+                      className="admin-approve"
+                      onClick={() => handleUpdateBooking(booking.id, 'Completed')}
+                    >
+                      Mark Complete
+                    </button>
+                    <button
+                      className="admin-reject"
+                      onClick={() => handleUpdateBooking(booking.id, 'Cancelled')}
+                    >
+                      Cancel Booking
+                    </button>
+                  </div>
+                )}
               </article>
             ))}
           </section>
         )}
 
+        {activeTab === 'inquiries' && (
+          <section className="admin-panel">
+            <h2>Customer Support Inquiries</h2>
+            <p>Messages submitted through the public Contact page.</p>
+
+            {inquiries.length === 0 ? (
+              <p className="admin-empty">No support inquiries.</p>
+            ) : (
+              inquiries.map((inq) => (
+                <article className="admin-list-row" key={inq.id}>
+                  <div className="admin-row-info">
+                    <h3>
+                      [{inq.ticketNumber}] {inq.name} ({inq.email})
+                    </h3>
+                    <p style={{ fontWeight: 600, color: '#2563eb' }}>
+                      Topic: {inq.subjectLabel || inq.subject}
+                    </p>
+                    <p style={{ margin: '6px 0', color: '#334155' }}>"{inq.message}"</p>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                      Submitted: {inq.date} · Status: {inq.status}
+                    </span>
+                  </div>
+
+                  {inq.status === 'Open' && (
+                    <button
+                      className="admin-approve"
+                      onClick={() => handleResolveInquiry(inq.id)}
+                    >
+                      Mark Resolved
+                    </button>
+                  )}
+                </article>
+              ))
+            )}
+          </section>
+        )}
+
         {activeTab === 'reports' && (
           <section className="admin-panel">
-            <h2>Complaints & Reports</h2>
-            <p>Review sample issues submitted by platform users.</p>
+            <h2>Complaints & Incident Reports</h2>
+            <p>Review reported reviews and user incident submissions.</p>
 
             {reports.map((report) => (
               <article className="admin-list-row" key={report.id}>
                 <div className="admin-row-info">
                   <h3>{report.title}</h3>
-                  <p>Reported by {report.submittedBy}</p>
-                  <span
-                    className={`admin-status ${report.status.toLowerCase()}`}
-                  >
+                  <p>Reported by: {report.submittedBy}</p>
+                  {report.details && (
+                    <p style={{ margin: '4px 0', color: '#475569' }}>"{report.details}"</p>
+                  )}
+                  <span className={`admin-status ${report.status.toLowerCase()}`}>
                     {report.status}
                   </span>
                 </div>
                 {report.status === 'Open' && (
                   <button
                     className="admin-approve"
-                    onClick={() => resolveReport(report.id)}
+                    onClick={() => handleResolveReport(report.id)}
                   >
                     Mark Resolved
                   </button>
@@ -417,31 +430,30 @@ function AdminDashboard() {
 
         {activeTab === 'settings' && (
           <section className="admin-panel">
-            <h2>Platform Settings</h2>
+            <h2>Platform Settings & Backend Integration</h2>
             <p>
-              These are planning placeholders for the future backend. They do
-              not change live platform settings.
+              When your backend folder is connected, the API client at <code>src/services/apiClient.js</code> automatically targets your active API endpoints.
             </p>
             <div className="admin-setting-row">
               <div>
-                <h3>Tutor verification</h3>
-                <p>Require administrator review of new tutor profiles.</p>
+                <h3>Backend API URL</h3>
+                <p>Default: <code>http://localhost:3000/api</code> (or configure <code>VITE_API_URL</code>)</p>
               </div>
-              <span className="admin-status verified">Planned</span>
+              <span className="admin-status verified">Configured</span>
             </div>
             <div className="admin-setting-row">
               <div>
-                <h3>Booking notifications</h3>
-                <p>Notify users about booking status changes.</p>
+                <h3>Offline / Local Storage Fallback</h3>
+                <p>Stores data persistently in browser localStorage whenever backend is disconnected.</p>
               </div>
-              <span className="admin-status verified">Planned</span>
+              <span className="admin-status verified">Active</span>
             </div>
             <div className="admin-setting-row">
               <div>
-                <h3>Payment integration</h3>
-                <p>Connect a payment provider after backend setup.</p>
+                <h3>Tutor Verification Rules</h3>
+                <p>New tutor registrations start as pending until verified by admin.</p>
               </div>
-              <span className="admin-status pending">Not connected</span>
+              <span className="admin-status verified">Active</span>
             </div>
           </section>
         )}
