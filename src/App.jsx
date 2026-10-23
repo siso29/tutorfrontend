@@ -15,6 +15,7 @@ import ScrollTop from './Components/ScrollTop.jsx';
 import BookingConfirmation from './pages/BookingConfrimation.jsx';
 import ProtectedRoute from './Components/ProtectedRoute.jsx';
 import ToastContainer from './Components/ToastContainer.jsx';
+import PaymentResult from './pages/PaymentResult.jsx';
 
 import { NotificationProvider } from './context/NotificationContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
@@ -66,6 +67,10 @@ function App() {
                 <Route path="/about" element={<About />} />
                 <Route path="/how-it-works" element={<HowItWorks />} />
                 <Route path="/booking-confirmation" element={<BookingConfirmation />} />
+<Route path="/payment-result" element={<PaymentResult />} />
+
+
+
               </Routes>
               <Footer />
               <ToastContainer />

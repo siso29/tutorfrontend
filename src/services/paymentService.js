@@ -1,4 +1,3 @@
-
 const API_URL = (
   import.meta.env.VITE_API_URL || "http://localhost:3000"
 ).replace(/\/$/, "");
@@ -12,7 +11,7 @@ export async function initializePayment(bookingId, token) {
     throw new Error("Please log in before making a payment.");
   }
 
-  const response = await fetch(`${API_URL}/api/payments/initialize`, {
+  const response = await fetch(`${API_URL}/api/payments/checkout`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -24,7 +23,9 @@ export async function initializePayment(bookingId, token) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.message || "Could not start payment.");
+    throw new Error(
+      data.message || data.error || "Could not start payment."
+    );
   }
 
   if (!data.checkoutUrl) {
@@ -42,7 +43,7 @@ export async function verifyPayment(txRef, token) {
   const response = await fetch(
     `${API_URL}/api/payments/verify/${encodeURIComponent(txRef)}`,
     {
-      method: "GET",
+      method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -52,11 +53,14 @@ export async function verifyPayment(txRef, token) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.message || "Payment verification failed.");
+    throw new Error(
+      data.message || data.error || "Payment verification failed."
+    );
   }
 
   return data;
 }
+
 export const paymentService = {
   initializePayment,
   verifyPayment,

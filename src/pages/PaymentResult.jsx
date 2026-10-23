@@ -1,48 +1,148 @@
+
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { paymentService } from '../services/paymentService';
-import '../CssPages/BookingConfirmation.css';
+import { useAuth } from '../context/AuthContext.jsx';
+import { verifyPayment } from '../services/paymentService.js';
 
-export default function PaymentResult() {
-  const [params] = useSearchParams();
-  const reference = params.get('tx_ref');
-  const [state, setState] = useState({ loading: true, status: 'pending', message: 'Verifying your payment securely with Chapa…' });
+function PaymentResult() {
+  const [searchParams] = useSearchParams();
+  const { token } = useAuth();
+
+  const [status, setStatus] = useState('checking');
+  const [message, setMessage] = useState('Verifying your payment with Chapa...');
+  const [payment, setPayment] = useState(null);
+
+  const reference =
+    searchParams.get('tx_ref') ||
+    searchParams.get('trx_ref');
 
   useEffect(() => {
-    let active = true;
-    if (!reference) {
-      setState({ loading: false, status: 'failed', message: 'No payment reference was provided.' });
-      return () => { active = false; };
+    let cancelled = false;
+
+    async function checkPayment() {
+      if (!reference) {
+        setStatus('error');
+        setMessage('No payment reference was found in the return URL.');
+        return;
+      }
+
+      if (!token) {
+        setStatus('error');
+        setMessage(
+          'Please sign in with the same account you used to start the payment, then return to this page.'
+        );
+        return;
+      }
+
+      try {
+        const result = await verifyPayment(reference, token);
+
+        if (cancelled) return;
+
+        const paymentStatus = String(result.status || '').toLowerCase();
+
+        setPayment(result.payment || null);
+
+        if (paymentStatus === 'successful') {
+          setStatus('success');
+          setMessage('Your payment has been verified successfully.');
+        } else if (
+          paymentStatus === 'pending' ||
+          paymentStatus === 'processing'
+        ) {
+          setStatus('pending');
+          setMessage(
+            'Your payment is still being processed. Please check again shortly.'
+          );
+        } else {
+          setStatus('failed');
+          setMessage(
+            'Your payment has not been confirmed as successful. Please check your payment history before trying again.'
+          );
+        }
+      } catch (error) {
+        if (cancelled) return;
+
+        setStatus('error');
+        setMessage(
+          error.message ||
+            'We could not verify your payment. Please try again.'
+        );
+      }
     }
-    paymentService.verify(reference)
-      .then((result) => {
-        if (!active) return;
-        const status = result.status || result.payment?.status || 'pending';
-        setState({ loading: false, status, message: status === 'successful'
-          ? 'Payment verified. Your receipt and payment history are now available.'
-          : status === 'failed' ? 'The payment could not be verified as successful. Please check your payment history or contact support.'
-          : status === 'cancelled' ? 'The payment was cancelled. You can return to your dashboard and try again.'
-          : 'Chapa has not confirmed this payment yet. Check your payment history again shortly.' });
-      })
-      .catch((error) => {
-        if (!active) return;
-        setState({ loading: false, status: 'pending', message: error.message || 'Could not verify the payment right now. Do not pay again until you check payment history.' });
-      });
-    return () => { active = false; };
-  }, [reference]);
+
+    checkPayment();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reference, token]);
+
+  const heading = {
+    checking: 'Checking your payment',
+    success: 'Payment successful!',
+    pending: 'Payment pending',
+    failed: 'Payment not confirmed',
+    error: 'Unable to verify payment',
+  }[status];
 
   return (
-    <main className="booking-confirmation">
-      <div className="booking-card">
-        <div className="booking-icon">{state.loading ? '…' : state.status === 'successful' ? '✓' : '!'}</div>
-        <h1>{state.loading ? 'Verifying Payment' : state.status === 'successful' ? 'Payment Confirmed' : 'Payment Status'}</h1>
-        <p className="booking-subtitle">{state.message}</p>
-        {reference && <p className="booking-status">REFERENCE: {reference} · STATUS: {state.status.toUpperCase()}</p>}
-        <div className="booking-actions">
-          <Link to="/guardian-dashboard" className="booking-btn">Go to My Dashboard</Link>
-          <Link to="/find-tutors" className="booking-btn secondary">Find Tutors</Link>
+    <main
+      style={{
+        maxWidth: '650px',
+        margin: '60px auto',
+        padding: '30px 20px',
+        textAlign: 'center',
+      }}
+    >
+      <h1>{heading}</h1>
+
+      <p role="status" aria-live="polite">{message}</p>
+
+      {status === 'success' && payment && (
+        <div style={{ margin: '20px 0' }}>
+          <p>
+            Amount: {payment.amount} {payment.currency || 'ETB'}
+          </p>
+          <p>Reference: {payment.merchant_reference || reference}</p>
         </div>
-      </div>
+      )}
+
+      {status === 'checking' && <p>Please wait...</p>}
+
+      {status === 'pending' && (
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+        >
+          Check Again
+        </button>
+      )}
+
+      {status === 'error' && token && reference && (
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+        >
+          Try Verification Again
+        </button>
+      )}
+
+      <p style={{ marginTop: '25px' }}>
+        <Link to="/guardian-dashboard">Go to Student Dashboard</Link>
+      </p>
+
+      <p>
+        <Link to="/">Return to Home</Link>
+      </p>
+
+      {!token && (
+        <p>
+          <Link to="/login">Sign In</Link>
+        </p>
+      )}
     </main>
   );
 }
+
+export default PaymentResult;
