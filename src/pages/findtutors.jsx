@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+﻿import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { tutorService } from '../services/tutorService';
 import { useSavedTutors } from '../context/SavedTutorsContext';
 import ChatModal from '../Components/ChatModal';
-import '../CssPages/FindTutors.css';
+import '../CssPages/FIndTutors.css';
 
 function FindTutors() {
   const navigate = useNavigate();
@@ -23,19 +23,22 @@ function FindTutors() {
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [sort, setSort] = useState('recommended');
 
-  const loadTutors = useCallback(async () => {
+  useEffect(() => {
+  const loadTutors = async () => {
     setLoading(true);
     try {
       const data = await tutorService.getAllTutors();
       setTutorList(data);
+    } catch (error) {
+      console.error('Failed to load tutors:', error);
+      setTutorList([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    loadTutors();
-  }, [loadTutors]);
+  loadTutors();
+}, []);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -258,7 +261,7 @@ function FindTutors() {
                         <div className="find-tutor-name">
                           <h3>{tutor.name}</h3>
                           {tutor.verified ? (
-                            <span className="verified">✓ Verified</span>
+                            <span className="verified">âœ“ Verified</span>
                           ) : (
                             <span className="pending-badge">
                               Verification pending
@@ -267,7 +270,7 @@ function FindTutors() {
                         </div>
 
                         <p className="find-subject">
-                          {(tutor.subjects || []).join(', ')} ·{' '}
+                          {(tutor.subjects || []).join(', ')} Â·{' '}
                           {(tutor.modes || []).join(' and ')}
                         </p>
 
@@ -275,7 +278,7 @@ function FindTutors() {
 
                         <div className="find-meta">
                           <span>
-                            ★ {tutor.rating} ({tutor.reviewsCount || tutor.reviews?.length || 0})
+                            â˜… {tutor.rating} ({tutor.reviewsCount || tutor.reviews?.length || 0})
                           </span>
                           <span>{tutor.experience} years experience</span>
                           <span>Next slot: {tutor.availability}</span>
@@ -299,7 +302,7 @@ function FindTutors() {
                             className="secondary-btn"
                             onClick={() => toggleSaved(tutor.id, tutor.name)}
                           >
-                            {saved ? '♥ Saved' : '♡ Save tutor'}
+                            {saved ? 'â™¥ Saved' : 'â™¡ Save tutor'}
                           </button>
                         </div>
                       </div>
@@ -329,3 +332,4 @@ function FindTutors() {
 }
 
 export default FindTutors;
+
