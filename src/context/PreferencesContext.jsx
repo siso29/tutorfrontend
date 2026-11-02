@@ -105,6 +105,80 @@ const translations = {
   },
 };
 
+const additionalTranslations = {
+  om: {
+    ...translations.en,
+    home: 'Fuula jalqabaa', findTutors: 'Barsiisaa barbaadi', howItWorks: 'Akkaataa itti hojjetu', about: 'Waa’ee keenya', contact: 'Nu qunnamaa',
+    lowData: 'Daataa xiqqaa', language: 'Afaan', findLearningPartner: 'Hiriyyaa barnootaa kee barbaadi', findTutor: 'Barsiisaa barbaadi',
+    compareTutors: 'Barsiisota barnoota, kutaa, gatii, bakka fi yeroo argamaatiin wal bira qabi.',
+    filters: 'Calallii', clearAll: 'Hunda qulqulleessi', searchNameSubject: 'Maqaa yookaan barnootaan barbaadi',
+    any: 'Kamiyyuu', anyGrade: 'Kutaa kamiyyuu', subject: 'Barnoota', grade: 'Kutaa', mode: 'Gosa barnootaa',
+    location: 'Bakka', anyLocation: 'Bakka kamiyyuu', direDawa: 'Dirree Dhawaa', online: 'Toora interneetii', inPerson: 'Fuulaa fuulatti', hybrid: 'Lamaan isaanii',
+    maxPrice: 'Gatii sa’aatii olaanaa', minRating: 'Sadarkaa xiqqaa', verifiedOnly: 'Barsiisota mirkanaa’an qofa',
+    searching: 'Barbaadaa jira…', tutorsFound: 'barsiisota argaman', reviewDetails: 'Osoo hin qabatin dura odeeffannoo barsiisaa ilaali.',
+    sortBy: 'Tartiibessi', recommended: 'Kan gorfame', highestRating: 'Sadarkaa olaanaa', lowestPrice: 'Gatii gadi aanaa', highestPrice: 'Gatii olaanaa', mostExperience: 'Muuxannoo baay’ee',
+    loadingTutors: 'Barsiisota fe’aa jira…', noMatches: 'Barsiisaan calallii kanaan wal simu hin argamne', changeFilters: 'Barnoota, kutaa, bakka yookaan gosa barnootaa jijjiiri.',
+    clearFilters: 'Calallii qulqulleessi', verified: 'Mirkanaa’e', pendingVerification: 'Mirkaneessa eeggataa jira', yearsExperience: 'waggaa muuxannoo',
+    nextSlot: 'Yeroo itti aanu', viewProfile: 'Odeeffannoo ilaali', saveTutor: 'Barsiisaa olkaa’i', saved: 'Olkaa’ame', perHour: 'sa’aatii tokkoof', anySubject: 'Barnoota kamiyyuu', search: 'Barsiisaa barbaadi', gradeOption: 'Kutaa',
+    homeEyebrow: 'Karaa barnootaa fooyya’aa', homeHeadline: 'Barsiisni gaariin', homeHeadlineEm: 'waan hunda jijjiira.',
+    homeDescription: 'Barataa hundaaf barnoota dhuunfaa. Barsiisaa naannoo yookaan toora interneetii amanamaa barbaadi, beellami, guddinas taasis.',
+    searchPrompt: 'Waan barachuu barbaadduun jalqabi', exploreOptions: 'Filannoo kee ilaali', whatLearn: 'Maal barachuu barbaadda?', exploreSubjects: 'Barnoota hunda ilaali',
+    clearPath: 'Karaa barnootaa ifa ta’e', fromLooking: 'Barbaaduu irraa gara barnootaatti', simpleSteps: 'Tarkaanfii salphaa muraasaan jalqabi.',
+    trustedFamilies: 'Maatiin Itoophiyaa nu amanu', personalSupport: 'Deeggarsa barnootaa dhuunfaa', confidenceEveryStep: 'Tarkaanfii hunda irratti ofitti amanamummaa', learningSafe: 'Namni hundi yeroo nageenya qabu barnoonni ni milkaa’a.',
+    safetyDescription: 'Maatiiwwan barsiisaa sirrii akka argatan ni gargaarra; odeeffannoo barsiisotaa ni qoranna, maatiin beellama ni to’atu.', saferLearning: 'Mala nageenya barnootaa', reviewedProfiles: 'Odeeffannoo barsiisaa qorame', guardianBookings: 'Beellama maatiin to’atu', supportAvailable: 'Yeroo barbaaddan deeggarsa', privacyDesign: 'Iccitii eeguu',
+    featuredTutors: 'Barsiisota filataman', meetTutors: 'Hiriyoota barnootaa kee argadhu', meetAllTutors: 'Barsiisota hunda ilaali', tutorsCta: 'Barsiisotaaf', teachersCta: 'Barsiisota gaariin asitti ni barbaachisu.', teachWithUs: 'Nu waliin barsiisi',
+    learningPersonal: 'Barnoota dhuunfaa', supportGoals: 'Deeggarsa galma kee waliin deemu', nextChapter: 'Boqonnaan kee itti aanu asitti jalqaba.', learningSupportFor: 'Deeggarsa barnootaa', everyGrade: 'Kutaa hundaaf', everySubject: 'Barnoota hundaaf', everyLearner: 'Barataa hundaaf',
+    tellNeeds: 'Waan si barbaachisu nutti himi', chooseSubjectGrade: 'Barnoota, kutaa fi gosa barnootaa siif ta’u filadhu.', meetMatch: 'Barsiisaa siif malu argadhu', compareProfiles: 'Odeeffannoo barsiisaa, muuxannoo, yeroo fi yaada maamilaa wal bira qabi.',
+    bookConfident: 'Ofitti amanamummaan beellami', chooseTime: 'Yeroo siif mijatu filadhu; osoo hin mirkaneessin dura odeeffannoo ilaali.', makeProgress: 'Guddina dhugaa argadhu', learnTogether: 'Waliin baradhaa, adeemsa hordofaa, yaada keessan qoodaa.',
+    safetyReviewedBody: 'Mirkaneessa dura eenyummaa fi gahumsi barsiisaa ni qorama.', guardianBookingsBody: 'Maatiin herrega barataa bulchuu fi beellama hayyamuu danda’u.', supportBody: 'Gaaffii yookaan yaaddoo yoo qabaattan garee keenya qunnamaa.', privacyBody: 'Odeeffannoon dhuunfaa fi bakka jireenyaa ni eegama.', tutorCtaBody: 'Beekumsa kee qoodi, odeeffannoo barsiisummaa kee guuti, barattoota si barbaadan waliin wal qunnami.',
+    authHeadline: 'Imalli barnootaa kee asitti jalqaba.', authIntro: 'Barsiisota gahumsa qaban waliin wal qunnami, dandeettii haaraa baradhu.',
+    authBenefit1: 'Galma barnoota keetiif barsiisaa argadhu', authBenefit2: 'Barnootaa fi beellama bulchi', authBenefit3: 'Guddina barnootaa hordofi', welcomeBack: 'Baga nagaan deebite!', joinTutorConnect: 'TutorConnect makami', enterDetails: 'Herrega seenuuf odeeffannoo kee galchi.', createStart: 'Jalqabuuf herrega bani.',
+    fullName: 'Maqaa guutuu', email: 'Teessoo imeelii', password: 'Jecha icciitii', confirmPassword: 'Jecha icciitii mirkaneessi', joinAs: 'Akka eenyuutti makamuu barbaadda?', learner: 'Barataa', guardian: 'Maatii / Eegduu', tutor: 'Barsiisaa', rememberMe: 'Na yaadadhu', forgotPassword: 'Jecha icciitii dagatte?', loginAccount: 'Herrega seeni', createAccount: 'Herrega bani', noAccount: 'Herrega hin qabduu?', alreadyAccount: 'Herrega qabdaa?', terms: 'Itti fufuun, seeraa fi imaammata iccitii ni fudhatta.',
+    authTag: 'BARADHU • BARSIISI • GUDDADHU', registerButton: 'Galmaa’i', loginButton: 'Seeni',
+    footerExplore: 'Sakatta’i', footerAccount: 'Herrega', footerGetInTouch: 'Nu qunnamaa', footerQuestions: 'TutorConnect irratti gaaffii qabdaa?', footerContactTeam: 'Garee keenya qunnami', footerBuilt: 'Barnoota fooyya’aa deeggaruuf hojjetame.',
+  },
+  so: {
+    ...translations.en,
+    home: 'Bogga hore', findTutors: 'Raadi macallin', howItWorks: 'Sida ay u shaqayso', about: 'Nagu saabsan', contact: 'Nala soo xiriir',
+    lowData: 'Xog yar', language: 'Luqad', findLearningPartner: 'Raadi lammaanahaaga waxbarasho', findTutor: 'Raadi macallin',
+    compareTutors: 'Is barbar dhig macallimiinta maaddo, fasal, qiime, goob iyo waqti si aad u hesho midka kugu habboon.',
+    filters: 'Shaandhayn', clearAll: 'Dhammaan nadiifi', searchNameSubject: 'Ku raadi magac ama maaddo', any: 'Mid kasta', anyGrade: 'Fasal kasta', subject: 'Maaddo', grade: 'Fasal', mode: 'Nooca casharka',
+    location: 'Goobta', anyLocation: 'Meel kasta', direDawa: 'Dire Dawa', online: 'Khadka internetka', inPerson: 'Fool-ka-fool', hybrid: 'Labada nooc',
+    maxPrice: 'Qiimaha ugu sarreeya saacaddii', minRating: 'Qiimaynta ugu yar', verifiedOnly: 'Macallimiin la xaqiijiyey oo keliya', searching: 'Waa la raadinayaa…', tutorsFound: 'macallin ayaa la helay',
+    reviewDetails: 'Faahfaahinta macallinka eeg ka hor intaadan ballansan.', sortBy: 'U kala saar', recommended: 'La soo jeediyey', highestRating: 'Qiimaynta ugu sarreysa', lowestPrice: 'Qiimaha ugu hooseeya', highestPrice: 'Qiimaha ugu sarreeya', mostExperience: 'Khibradda ugu badan', loadingTutors: 'Macallimiinta waa la soo rarayaa…',
+    noMatches: 'Macallin ku habboon shaandhayntan lama helin', changeFilters: 'Beddel maaddada, fasalka, goobta ama nooca casharka.', clearFilters: 'Nadiifi shaandhaynta', verified: 'La xaqiijiyey', pendingVerification: 'Xaqiijin ayaa socota', yearsExperience: 'sano oo waayo-aragnimo ah', nextSlot: 'Waqtiga xiga', viewProfile: 'Eeg astaanta', saveTutor: 'Kaydi macallinka', saved: 'La kaydiyey', perHour: 'saacaddii', anySubject: 'Maaddo kasta', search: 'Raadi macallin', gradeOption: 'Fasal',
+    homeEyebrow: 'Hab ka wanaagsan waxbarashada', homeHeadline: 'Waxbarid wanaagsan', homeHeadlineEm: 'wax walba way beddeshaa.', homeDescription: 'Casharro gaar ah oo arday kasta ah. Raadi macallin deegaankaaga ama internetka, si kalsooni leh u ballanso, horumarna samee.', searchPrompt: 'Ka bilow waxa aad rabto inaad barato',
+    exploreOptions: 'Eeg xulashooyinkaaga', whatLearn: 'Maxaad jeclaan lahayd inaad barato?', exploreSubjects: 'Eeg maaddooyinka oo dhan', clearPath: 'Jid waxbarasho oo cad', fromLooking: 'Raadin ilaa waxbarasho', simpleSteps: 'Wax kasta oo aad ku bilaabi karto, dhowr tallaabo oo fudud.',
+    trustedFamilies: 'Qoysas badan oo Itoobiya jooga ayaa nagu kalsoon', personalSupport: 'Taageero u gaar ah safar kasta oo waxbarasho', confidenceEveryStep: 'Kalsooni tallaabo kasta', learningSafe: 'Waxbarashadu way wanaagsanaataa marka qof kastaa ammaan dareemo.', safetyDescription: 'Waxaan qoysaska ka caawinnaa helitaanka taageerada saxda ah annagoo eegayna astaamaha macallimiinta, ballansashadana waalidku maamulo.', saferLearning: 'Habkayaga badbaadada waxbarashada', reviewedProfiles: 'Astaamaha macallimiinta la hubiyey', guardianBookings: 'Ballansashada waalidku maamulo', supportAvailable: 'Taageero markaad u baahato', privacyDesign: 'Ilaalinta xogta gaarka ah',
+    featuredTutors: 'Macallimiin la xushay', meetTutors: 'La kulan lammaanahaaga waxbarasho', meetAllTutors: 'La kulan dhammaan macallimiinta', tutorsCta: 'Macallimiinta', teachersCta: 'Macallimiin wanaagsan halkan ayay ku habboon yihiin.', teachWithUs: 'Nala shaqee macallin ahaan',
+    learningPersonal: 'Waxbarasho kuu gaar ah', supportGoals: 'Taageero ku habboon yoolalkaaga', nextChapter: 'Cutubkaaga xiga halkan ayuu ka bilaabmaa.', learningSupportFor: 'Taageero waxbarasho oo loogu talagalay', everyGrade: 'Fasal kasta', everySubject: 'Maaddo kasta', everyLearner: 'Arday kasta',
+    tellNeeds: 'Noo sheeg baahidaada', chooseSubjectGrade: 'Dooro maaddo, fasal iyo nooca casharka kugu habboon.', meetMatch: 'Hel macallinka kugu habboon', compareProfiles: 'Is barbar dhig astaamaha, khibradda, helitaanka iyo faallooyinka macallimiinta.', bookConfident: 'Si kalsooni leh u ballanso', chooseTime: 'Dooro waqti kugu habboon oo eeg faahfaahinta ka hor xaqiijinta.', makeProgress: 'Horumar dhab ah samee', learnTogether: 'Wada barta, la socda horumarka, fikradahana wadaaga casharka ka dib.',
+    safetyReviewedBody: 'Aqoonsiga iyo aqoonta macallinka waa la hubiyaa ka hor xaqiijinta astaanta.', guardianBookingsBody: 'Waalidiintu waxay maamuli karaan akoonnada ardayda oo ansixin karaan ballamaha.', supportBody: 'La xiriir kooxdayada haddii aad su’aal ama walaac qabto.', privacyBody: 'Xogta xiriirka iyo goobta gaarka ah waa la ilaaliyaa.', tutorCtaBody: 'La wadaag aqoontaada, dhis astaantaada macallinnimo, lana xiriir ardayda u baahan xirfadahaaga.',
+    authHeadline: 'Safarkaaga waxbarasho halkan ayuu ka bilaabmaa.', authIntro: 'La xiriir macallimiin aqoon leh, baro xirfado cusub, cashar kastana ka faa’iidayso.', authBenefit1: 'Hel macallimiin taageera yoolalkaaga', authBenefit2: 'Maamul casharrada iyo ballamaha', authBenefit3: 'La soco horumarka waxbarashada', welcomeBack: 'Soo dhawoow!', joinTutorConnect: 'Ku biir TutorConnect', enterDetails: 'Geli faahfaahintaada si aad akoonka u furato.', createStart: 'Samee akoon si aad u bilowdo.',
+    fullName: 'Magaca oo buuxa', email: 'Cinwaanka iimaylka', password: 'Furaha sirta', confirmPassword: 'Xaqiiji furaha sirta', joinAs: 'Waxaan rabaa inaan ku biiro anigoo ah', learner: 'Arday', guardian: 'Waalid / Mas’uul', tutor: 'Macallin', rememberMe: 'I xasuuso', forgotPassword: 'Ma illowday furaha sirta?', loginAccount: 'Gal akoonka', createAccount: 'Samee akoonkayga', noAccount: 'Akoon ma lihid?', alreadyAccount: 'Akoon ma leedahay?', terms: 'Markaad sii waddo, waxaad oggolaanaysaa shuruudaha iyo siyaasadda asturnaanta.',
+    authTag: 'BARO • BAR • KOR', registerButton: 'Is diiwaangeli', loginButton: 'Gal',
+    footerExplore: 'Baadh', footerAccount: 'Akoon', footerGetInTouch: 'Nala soo xiriir', footerQuestions: 'Su’aalo ma ka qabtaa TutorConnect?', footerContactTeam: 'La xiriir kooxdayada', footerBuilt: 'Waxaa loo sameeyey taageeridda waxbarasho wanaagsan.',
+  },
+};
+
+Object.assign(translations, additionalTranslations);
+translations.om.footerBlurb = 'Barattoota, maatii fi barsiisota walitti fidna.';
+translations.so.footerBlurb = 'Waxaan isku xirnaa ardayda, waalidiinta iyo macallimiinta.';
+Object.assign(translations.en, {
+  authTag: 'LEARN • TEACH • GROW',
+  registerButton: 'Register',
+  loginButton: 'Log in',
+  footerExplore: 'Explore',
+  footerAccount: 'Account',
+  footerGetInTouch: 'Get in touch',
+  footerQuestions: 'Questions about TutorConnect?',
+  footerContactTeam: 'Contact our team',
+  footerBuilt: 'Built to support better learning.',
+  footerBlurb: 'Connecting learners, guardians, and tutors to make personalized learning easier.',
+});
+
+const supportedLanguages = ['en', 'am', 'om', 'so'];
+
 function initialLowData() {
   try {
     const saved = localStorage.getItem(LOW_DATA_KEY);
@@ -116,12 +190,15 @@ function initialLowData() {
 
 export function PreferencesProvider({ children }) {
   const [language, setLanguageState] = useState(() => {
-    try { return localStorage.getItem(LANGUAGE_KEY) === 'am' ? 'am' : 'en'; } catch { return 'en'; }
+    try {
+      const saved = localStorage.getItem(LANGUAGE_KEY);
+      return supportedLanguages.includes(saved) ? saved : 'en';
+    } catch { return 'en'; }
   });
   const [lowData, setLowDataState] = useState(initialLowData);
 
   useEffect(() => {
-    document.documentElement.lang = language === 'am' ? 'am' : 'en';
+    document.documentElement.lang = language;
     document.documentElement.classList.toggle('low-data-mode', lowData);
     try {
       localStorage.setItem(LANGUAGE_KEY, language);
@@ -131,7 +208,7 @@ export function PreferencesProvider({ children }) {
 
   const value = useMemo(() => ({
     language,
-    setLanguage: (nextLanguage) => setLanguageState(nextLanguage === 'am' ? 'am' : 'en'),
+    setLanguage: (nextLanguage) => setLanguageState(supportedLanguages.includes(nextLanguage) ? nextLanguage : 'en'),
     lowData,
     setLowData: setLowDataState,
     t: (key) => translations[language][key] || translations.en[key] || key,

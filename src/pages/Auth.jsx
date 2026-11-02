@@ -77,7 +77,7 @@ function Auth() {
         </Link>
 
         <div className="auth-intro-content">
-          <span className="auth-tag">LEARN • TEACH • GROW</span>
+          <span className="auth-tag">{language === 'am' ? 'ተማር • አስተምር • እደግ' : t('authTag')}</span>
           <h1>{t('authHeadline')}</h1>
           <p>
             {t('authIntro')}
@@ -243,7 +243,7 @@ function Auth() {
                 setMessage('');
               }}
             >
-              {isLogin ? (language === 'am' ? 'ይመዝገቡ' : 'Register') : (language === 'am' ? 'ግባ' : 'Login')}
+              {isLogin ? (language === 'am' ? 'ይመዝገቡ' : t('registerButton')) : (language === 'am' ? 'ግባ' : t('loginButton'))}
             </button>
           </p>
 

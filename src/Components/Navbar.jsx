@@ -74,6 +74,8 @@ function Navbar() {
             <select aria-label={t('language')} value={language} onChange={(event) => setLanguage(event.target.value)}>
               <option value="en">EN</option>
               <option value="am">አማ</option>
+              <option value="om">Afaan Oromoo</option>
+              <option value="so">Af Soomaali</option>
             </select>
           </label>
           <button type="button" className={`low-data-toggle ${lowData ? 'active' : ''}`} aria-pressed={lowData} onClick={() => setLowData(!lowData)} title={t('lowData')}>
@@ -222,10 +224,10 @@ function Navbar() {
           ) : (
             <>
               <Link to="/login" className="nav-login">
-              {language === 'am' ? 'ግባ' : 'Log in'}
+              {language === 'am' ? 'ግባ' : t('loginButton')}
               </Link>
               <Link to="/register" className="nav-register">
-              {language === 'am' ? 'ይመዝገቡ' : 'Sign Up'}
+              {language === 'am' ? 'ይመዝገቡ' : t('registerButton')}
               </Link>
             </>
           )}
