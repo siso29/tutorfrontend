@@ -23,6 +23,7 @@ function TutorDashboard() {
   const [profileMessage, setProfileMessage] = useState('');
   const [profileError, setProfileError] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
+  const [city, setCity] = useState('Dire Dawa');
 
   const [availability, setAvailability] = useState([
     { day: 'Monday', enabled: true },
@@ -62,6 +63,7 @@ function TutorDashboard() {
         setSubjects((profile.subjects || []).join(', '));
         setBio(profile.about || '');
         setPhotoUrl(profile.photoUrl || profile.photo_url || '');
+        setCity(profile.city || 'Dire Dawa');
       }
     }
     loadTutorProfile();
@@ -104,6 +106,7 @@ function TutorDashboard() {
         about: bio,
         description: bio.slice(0, 120) + '...',
         photoUrl,
+        city,
         initials: tutorData.name.split(/\s+/).map((part) => part[0]).join('').toUpperCase().slice(0, 2),
       });
       setTutorData(updated);
@@ -449,6 +452,13 @@ function TutorDashboard() {
                   disabled
                   style={{ background: '#f8fafc', color: '#64748b' }}
                 />
+              </label>
+
+              <label>
+                City for face-to-face lessons
+                <select value={city} onChange={(event) => setCity(event.target.value)}>
+                  <option value="Dire Dawa">Dire Dawa</option>
+                </select>
               </label>
 
               <label>

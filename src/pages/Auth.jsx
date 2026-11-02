@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import '../CssPages/Auth.css';
+import { usePreferences } from '../context/PreferencesContext';
 
 function Auth() {
   const [role, setRole] = useState('learner');
@@ -11,6 +12,7 @@ function Auth() {
   const navigate = useNavigate();
   const { login, register, loading } = useAuth();
   const { addToast } = useNotification();
+  const { t, language } = usePreferences();
 
   const [isLogin, setIsLogin] = useState(location.pathname !== '/register');
 
@@ -76,25 +78,24 @@ function Auth() {
 
         <div className="auth-intro-content">
           <span className="auth-tag">LEARN • TEACH • GROW</span>
-          <h1>Your learning journey starts here.</h1>
+          <h1>{t('authHeadline')}</h1>
           <p>
-            Connect with qualified tutors, discover new skills, and make every
-            learning session count.
+            {t('authIntro')}
           </p>
 
           <div className="auth-benefit">
             <span>✓</span>
-            Find tutors for your learning goals
+            {t('authBenefit1')}
           </div>
 
           <div className="auth-benefit">
             <span>✓</span>
-            Manage lessons and bookings
+            {t('authBenefit2')}
           </div>
 
           <div className="auth-benefit">
             <span>✓</span>
-            Keep track of learning progress
+            {t('authBenefit3')}
           </div>
         </div>
 
@@ -124,18 +125,18 @@ function Auth() {
           </div>
 
           <div className="auth-heading">
-            <h2>{isLogin ? 'Welcome back!' : 'Join TutorConnect'}</h2>
+            <h2>{isLogin ? t('welcomeBack') : t('joinTutorConnect')}</h2>
             <p>
               {isLogin
-                ? 'Enter your details to access your account.'
-                : 'Create an account to get started.'}
+                ? t('enterDetails')
+                : t('createStart')}
             </p>
           </div>
 
           <form className="auth-form" onSubmit={handleSubmit}>
             {!isLogin && (
               <label>
-                Full name
+                {t('fullName')}
                 <input
                   name="fullName"
                   type="text"
@@ -147,7 +148,7 @@ function Auth() {
             )}
 
             <label>
-              Email address
+                {t('email')}
               <input
                 name="email"
                 type="email"
@@ -158,7 +159,7 @@ function Auth() {
             </label>
 
             <label>
-              Password
+              {t('password')}
               <input
                 name="password"
                 type="password"
@@ -172,7 +173,7 @@ function Auth() {
             {!isLogin && (
               <>
                 <label>
-                  Confirm password
+                  {t('confirmPassword')}
                   <input
                     name="confirmPassword"
                     type="password"
@@ -184,14 +185,14 @@ function Auth() {
                 </label>
 
                 <label>
-                  I want to join as
+                  {t('joinAs')}
                   <select
                     value={role}
                     onChange={(event) => setRole(event.target.value)}
                   >
-                    <option value="learner">Learner</option>
-                    <option value="guardian">Parent / Guardian</option>
-                    <option value="tutor">Tutor</option>
+                    <option value="learner">{t('learner')}</option>
+                    <option value="guardian">{t('guardian')}</option>
+                    <option value="tutor">{t('tutor')}</option>
                   </select>
                 </label>
               </>
@@ -201,7 +202,7 @@ function Auth() {
               <div className="auth-options">
                 <label className="auth-remember">
                   <input type="checkbox" defaultChecked />
-                  Remember me
+                  {t('rememberMe')}
                 </label>
 
                 <button
@@ -213,7 +214,7 @@ function Auth() {
                     )
                   }
                 >
-                  Forgot password?
+                  {t('forgotPassword')}
                 </button>
               </div>
             )}
@@ -222,8 +223,8 @@ function Auth() {
               {loading
                 ? 'Processing...'
                 : isLogin
-                  ? 'Login to Account'
-                  : 'Create My Account'}
+                  ? t('loginAccount')
+                  : t('createAccount')}
             </button>
 
             {message && (
@@ -234,7 +235,7 @@ function Auth() {
           </form>
 
           <p className="auth-switch">
-            {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
+            {isLogin ? t('noAccount') : t('alreadyAccount')}{' '}
             <button
               type="button"
               onClick={() => {
@@ -242,12 +243,12 @@ function Auth() {
                 setMessage('');
               }}
             >
-              {isLogin ? 'Register' : 'Login'}
+              {isLogin ? (language === 'am' ? 'ይመዝገቡ' : 'Register') : (language === 'am' ? 'ግባ' : 'Login')}
             </button>
           </p>
 
           <p className="auth-terms">
-            By continuing, you agree to the platform's terms and privacy policy.
+            {t('terms')}
           </p>
         </div>
       </section>

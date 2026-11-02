@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import '../CssPages/Navbar.css';
+import { usePreferences } from '../context/PreferencesContext';
 
 function Navbar() {
   const { user, role, logout } = useAuth();
@@ -14,6 +15,7 @@ function Navbar() {
   const dropdownRef = useRef(null);
   const notifRef = useRef(null);
   const navigate = useNavigate();
+  const { language, setLanguage, lowData, setLowData, t } = usePreferences();
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -50,23 +52,33 @@ function Navbar() {
 
         <nav className={`site-nav ${mobileMenuOpen ? 'mobile-open' : ''}`}>
           <ScrollToTopLink to="/" onClick={() => setMobileMenuOpen(false)}>
-            Home
+            {t('home')}
           </ScrollToTopLink>
           <ScrollToTopLink to="/find-tutors" onClick={() => setMobileMenuOpen(false)}>
-            Find Tutors
+            {t('findTutors')}
           </ScrollToTopLink>
           <ScrollToTopLink to="/how-it-works" onClick={() => setMobileMenuOpen(false)}>
-            How it works
+            {t('howItWorks')}
           </ScrollToTopLink>
           <ScrollToTopLink to="/about" onClick={() => setMobileMenuOpen(false)}>
-            About
+            {t('about')}
           </ScrollToTopLink>
           <ScrollToTopLink to="/contact" onClick={() => setMobileMenuOpen(false)}>
-            Contact
+            {t('contact')}
           </ScrollToTopLink>
         </nav>
 
         <div className="site-header-actions">
+          <label className="preference-language" title={t('language')}>
+            <span className="sr-only">{t('language')}</span>
+            <select aria-label={t('language')} value={language} onChange={(event) => setLanguage(event.target.value)}>
+              <option value="en">EN</option>
+              <option value="am">አማ</option>
+            </select>
+          </label>
+          <button type="button" className={`low-data-toggle ${lowData ? 'active' : ''}`} aria-pressed={lowData} onClick={() => setLowData(!lowData)} title={t('lowData')}>
+            <span aria-hidden="true">◉</span> {t('lowData')}
+          </button>
           {/* In-app Notification Bell */}
           <div ref={notifRef} style={{ position: 'relative' }}>
             <button
@@ -210,10 +222,10 @@ function Navbar() {
           ) : (
             <>
               <Link to="/login" className="nav-login">
-                Log in
+              {language === 'am' ? 'ግባ' : 'Log in'}
               </Link>
               <Link to="/register" className="nav-register">
-                Sign Up
+              {language === 'am' ? 'ይመዝገቡ' : 'Sign Up'}
               </Link>
             </>
           )}

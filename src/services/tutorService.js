@@ -57,6 +57,7 @@ export const tutorService = {
       about: '',
       description: 'Tutor profile pending completion.',
       photoUrl: '',
+      city: 'Dire Dawa',
       ...profile,
     };
     try {

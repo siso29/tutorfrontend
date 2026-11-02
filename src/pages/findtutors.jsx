@@ -3,12 +3,15 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { tutorService } from '../services/tutorService';
 import { useSavedTutors } from '../context/SavedTutorsContext';
 import ChatModal from '../Components/ChatModal';
+import { usePreferences } from '../context/PreferencesContext';
+import TutorPortrait from '../Components/TutorPortrait';
 import '../CssPages/FIndTutors.css';
 
 function FindTutors() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toggleSaved, isSaved } = useSavedTutors();
+  const { t } = usePreferences();
 
   const [tutorList, setTutorList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,6 +21,7 @@ function FindTutors() {
   const [subject, setSubject] = useState('Any');
   const [grade, setGrade] = useState('');
   const [mode, setMode] = useState('Any');
+  const [city, setCity] = useState('Dire Dawa');
   const [maxPrice, setMaxPrice] = useState(400);
   const [minRating, setMinRating] = useState('0');
   const [verifiedOnly, setVerifiedOnly] = useState(false);
@@ -46,6 +50,7 @@ function FindTutors() {
     setSubject(params.get('subject') || 'Any');
     setGrade(params.get('grade') || '');
     setMode(params.get('mode') || 'Any');
+    setCity(params.get('city') || 'Dire Dawa');
     setVerifiedOnly(params.get('verified') === 'true');
   }, [location.search]);
 
@@ -62,6 +67,7 @@ function FindTutors() {
         grade === '' || (tutor.grades || []).includes(Number(grade));
 
       const modeMatch = mode === 'Any' || (tutor.modes || []).includes(mode);
+      const cityMatch = city === 'Any' || (tutor.city || 'Dire Dawa') === city || (mode !== 'In-person' && (tutor.modes || []).includes('Online'));
 
       const priceMatch = tutor.price <= maxPrice;
       const ratingMatch = tutor.rating >= Number(minRating);
@@ -72,6 +78,7 @@ function FindTutors() {
         subjectMatch &&
         gradeMatch &&
         modeMatch &&
+        cityMatch &&
         priceMatch &&
         ratingMatch &&
         verifiedMatch
@@ -89,13 +96,14 @@ function FindTutors() {
     }
 
     return results;
-  }, [tutorList, search, subject, grade, mode, maxPrice, minRating, verifiedOnly, sort]);
+  }, [tutorList, search, subject, grade, mode, city, maxPrice, minRating, verifiedOnly, sort]);
 
   function clearFilters() {
     setSearch('');
     setSubject('Any');
     setGrade('');
     setMode('Any');
+    setCity('Dire Dawa');
     setMaxPrice(400);
     setMinRating('0');
     setVerifiedOnly(false);
@@ -106,27 +114,27 @@ function FindTutors() {
     <div className="app">
       <main className="find-page">
         <div className="find-heading">
-          <span className="eyebrow">Find your learning partner</span>
-          <h1>Find a tutor</h1>
+          <span className="eyebrow">{t('findLearningPartner')}</span>
+          <h1>{t('findTutor')}</h1>
           <p>
-            Compare verified tutors by subject, grade, price and availability to find the right match.
+            {t('compareTutors')}
           </p>
         </div>
 
         <div className="find-layout">
           <aside className="filter-panel">
             <div className="filter-title">
-              <h2>Filters</h2>
+              <h2>{t('filters')}</h2>
               <button
                 type="button"
                 className="clear-btn"
                 onClick={clearFilters}
               >
-                Clear all
+                {t('clearAll')}
               </button>
             </div>
 
-            <label htmlFor="tutor-search">Search by name or subject</label>
+            <label htmlFor="tutor-search">{t('searchNameSubject')}</label>
             <input
               id="tutor-search"
               type="search"
@@ -135,13 +143,13 @@ function FindTutors() {
               onChange={(event) => setSearch(event.target.value)}
             />
 
-            <label htmlFor="subject-filter">Subject</label>
+            <label htmlFor="subject-filter">{t('subject')}</label>
             <select
               id="subject-filter"
               value={subject}
               onChange={(event) => setSubject(event.target.value)}
             >
-              <option>Any</option>
+              <option value="Any">{t('anySubject')}</option>
               <option>Mathematics</option>
               <option>English</option>
               <option>Physics</option>
@@ -150,34 +158,40 @@ function FindTutors() {
               <option>Amharic</option>
             </select>
 
-            <label htmlFor="grade-filter">Grade</label>
+            <label htmlFor="grade-filter">{t('grade')}</label>
             <select
               id="grade-filter"
               value={grade}
               onChange={(event) => setGrade(event.target.value)}
             >
-              <option value="">Any grade</option>
+              <option value="">{t('anyGrade')}</option>
               {Array.from({ length: 13 }, (_, index) => (
                 <option key={index} value={index}>
-                  Grade {index}
+                  {t('gradeOption')} {index}
                 </option>
               ))}
             </select>
 
-            <label htmlFor="mode-filter">Learning mode</label>
+            <label htmlFor="mode-filter">{t('mode')}</label>
             <select
               id="mode-filter"
               value={mode}
               onChange={(event) => setMode(event.target.value)}
             >
-              <option>Any</option>
-              <option>Online</option>
-              <option>In-person</option>
-              <option>Hybrid</option>
+              <option value="Any">{t('any')}</option>
+              <option value="Online">{t('online')}</option>
+              <option value="In-person">{t('inPerson')}</option>
+              <option value="Hybrid">{t('hybrid')}</option>
+            </select>
+
+            <label htmlFor="city-filter">{t('location')}</label>
+            <select id="city-filter" value={city} onChange={(event) => setCity(event.target.value)}>
+              <option value="Any">{t('anyLocation')}</option>
+              <option value="Dire Dawa">{t('direDawa')}</option>
             </select>
 
             <div className="filter-label-row">
-              <label htmlFor="price-filter">Max price per hour</label>
+              <label htmlFor="price-filter">{t('maxPrice')}</label>
               <strong>{maxPrice} ETB</strong>
             </div>
             <input
@@ -190,7 +204,7 @@ function FindTutors() {
               onChange={(event) => setMaxPrice(Number(event.target.value))}
             />
 
-            <label htmlFor="rating-filter">Minimum rating</label>
+            <label htmlFor="rating-filter">{t('minRating')}</label>
             <select
               id="rating-filter"
               value={minRating}
@@ -208,7 +222,7 @@ function FindTutors() {
                 checked={verifiedOnly}
                 onChange={(event) => setVerifiedOnly(event.target.checked)}
               />
-              Verified tutors only
+              {t('verifiedOnly')}
             </label>
           </aside>
 
@@ -216,37 +230,37 @@ function FindTutors() {
             <div className="results-toolbar">
               <div>
                 <h2>
-                  {loading ? 'Searching...' : `${filteredTutors.length} tutors found`}
+                  {loading ? t('searching') : `${filteredTutors.length} ${t('tutorsFound')}`}
                 </h2>
-                <p>Review each tutor's details before booking.</p>
+                <p>{t('reviewDetails')}</p>
               </div>
 
               <div className="sort-control">
-                <label htmlFor="sort-filter">Sort by</label>
+                <label htmlFor="sort-filter">{t('sortBy')}</label>
                 <select
                   id="sort-filter"
                   value={sort}
                   onChange={(event) => setSort(event.target.value)}
                 >
-                  <option value="recommended">Recommended</option>
-                  <option value="rating">Highest rating</option>
-                  <option value="price-low">Lowest price</option>
-                  <option value="price-high">Highest price</option>
-                  <option value="experience">Most experience</option>
+                  <option value="recommended">{t('recommended')}</option>
+                  <option value="rating">{t('highestRating')}</option>
+                  <option value="price-low">{t('lowestPrice')}</option>
+                  <option value="price-high">{t('highestPrice')}</option>
+                  <option value="experience">{t('mostExperience')}</option>
                 </select>
               </div>
             </div>
 
             {loading ? (
               <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
-                <p>Loading available tutors...</p>
+                <p>{t('loadingTutors')}</p>
               </div>
             ) : filteredTutors.length === 0 ? (
               <div className="no-results">
-                <h3>No tutors match your filters</h3>
-                <p>Try changing the subject, grade, price or rating.</p>
+                <h3>{t('noMatches')}</h3>
+                <p>{t('changeFilters')}</p>
                 <button className="primary-btn" onClick={clearFilters}>
-                  Clear filters
+                  {t('clearFilters')}
                 </button>
               </div>
             ) : (
@@ -255,23 +269,23 @@ function FindTutors() {
                   const saved = isSaved(tutor.id);
                   return (
                     <article className="find-tutor-card" key={tutor.id}>
-                      <div className="find-avatar">{tutor.photoUrl || tutor.photo_url ? <img src={tutor.photoUrl || tutor.photo_url} alt={`${tutor.name} profile`} /> : tutor.initials}</div>
+                      <TutorPortrait tutor={tutor} className="find-avatar" />
 
                       <div className="find-tutor-info">
                         <div className="find-tutor-name">
                           <h3>{tutor.name}</h3>
                           {tutor.verified ? (
-                            <span className="verified">âœ“ Verified</span>
+                            <span className="verified">✓ {t('verified')}</span>
                           ) : (
                             <span className="pending-badge">
-                              Verification pending
+                              {t('pendingVerification')}
                             </span>
                           )}
                         </div>
 
                         <p className="find-subject">
-                          {(tutor.subjects || []).join(', ')} Â·{' '}
-                          {(tutor.modes || []).join(' and ')}
+                          {(tutor.subjects || []).join(', ')} ·{' '}
+                          {(tutor.modes || []).map((tutorMode) => tutorMode === 'In-person' ? t('inPerson') : tutorMode === 'Online' ? t('online') : t('hybrid')).join(' · ')}
                         </p>
 
                         <p className="find-description">{tutor.description}</p>
@@ -280,8 +294,9 @@ function FindTutors() {
                           <span>
                             â˜… {tutor.rating} ({tutor.reviewsCount || tutor.reviews?.length || 0})
                           </span>
-                          <span>{tutor.experience} years experience</span>
-                          <span>Next slot: {tutor.availability}</span>
+                          <span>{tutor.city || 'Dire Dawa'}</span>
+                          <span>{tutor.experience} {t('yearsExperience')}</span>
+                          <span>{t('nextSlot')}: {tutor.availability}</span>
                         </div>
 
                         <p className="match-note">
@@ -294,7 +309,7 @@ function FindTutors() {
                             className="primary-btn"
                             onClick={() => navigate(`/tutors/${tutor.id}`)}
                           >
-                            View profile
+                            {t('viewProfile')}
                           </button>
 
                           <button
@@ -302,14 +317,14 @@ function FindTutors() {
                             className="secondary-btn"
                             onClick={() => toggleSaved(tutor.id, tutor.name)}
                           >
-                            {saved ? 'â™¥ Saved' : 'â™¡ Save tutor'}
+                            {saved ? `♥ ${t('saved')}` : `♡ ${t('saveTutor')}`}
                           </button>
                         </div>
                       </div>
 
                       <div className="find-price">
                         <strong>{tutor.price} ETB</strong>
-                        <span>per hour</span>
+                        <span>{t('perHour')}</span>
                       </div>
                     </article>
                   );

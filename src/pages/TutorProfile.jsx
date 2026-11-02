@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { tutorService } from '../services/tutorService';
+import TutorPortrait from '../Components/TutorPortrait';
 import { supportService } from '../services/supportService';
 import { useSavedTutors } from '../context/SavedTutorsContext';
 import { useNotification } from '../context/NotificationContext';
@@ -129,7 +130,7 @@ function TutorProfile() {
         <div className="profile-layout">
           <section className="profile-main">
             <article className="profile-intro">
-              <div className="profile-avatar">{tutor.photoUrl || tutor.photo_url ? <img src={tutor.photoUrl || tutor.photo_url} alt={`${tutor.name} profile`} /> : tutor.initials}</div>
+              <TutorPortrait tutor={tutor} className="profile-avatar" />
 
               <div className="profile-intro-info">
                 <div className="find-tutor-name">

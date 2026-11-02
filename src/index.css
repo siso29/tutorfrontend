@@ -28,3 +28,19 @@ textarea {
 a {
   text-decoration: none;
 }
+
+.low-data-mode *,
+.low-data-mode *::before,
+.low-data-mode *::after {
+  scroll-behavior: auto !important;
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+.low-data-mode .tutor-card,
+.low-data-mode .hero-search,
+.low-data-mode .filter-panel,
+.low-data-mode .find-tutor-card {
+  box-shadow: none !important;
+}

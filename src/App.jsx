@@ -22,15 +22,17 @@ import { NotificationProvider } from './context/NotificationContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { BookingProvider } from './context/BookingContext.jsx';
 import { SavedTutorsProvider } from './context/SavedTutorsContext.jsx';
+import { PreferencesProvider } from './context/PreferencesContext.jsx';
 
 import './CssPages/ModalsAndComponents.css';
 
 function App() {
   return (
-    <NotificationProvider>
-      <AuthProvider>
-        <BookingProvider>
-          <SavedTutorsProvider>
+    <PreferencesProvider>
+      <NotificationProvider>
+        <AuthProvider>
+          <BookingProvider>
+            <SavedTutorsProvider>
             <BrowserRouter>
               <ScrollTop />
               <Navbar />
@@ -77,10 +79,11 @@ function App() {
               <Footer />
               <ToastContainer />
             </BrowserRouter>
-          </SavedTutorsProvider>
-        </BookingProvider>
-      </AuthProvider>
-    </NotificationProvider>
+            </SavedTutorsProvider>
+          </BookingProvider>
+        </AuthProvider>
+      </NotificationProvider>
+    </PreferencesProvider>
   );
 }
 
