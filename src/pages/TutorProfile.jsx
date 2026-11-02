@@ -129,7 +129,7 @@ function TutorProfile() {
         <div className="profile-layout">
           <section className="profile-main">
             <article className="profile-intro">
-              <div className="profile-avatar">{tutor.initials}</div>
+              <div className="profile-avatar">{tutor.photoUrl || tutor.photo_url ? <img src={tutor.photoUrl || tutor.photo_url} alt={`${tutor.name} profile`} /> : tutor.initials}</div>
 
               <div className="profile-intro-info">
                 <div className="find-tutor-name">

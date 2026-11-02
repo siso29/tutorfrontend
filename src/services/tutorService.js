@@ -40,8 +40,41 @@ export const tutorService = {
     return tutors.find((t) => t.id === numericId) || tutors[0];
   },
 
+  async createTutor(profile) {
+    const newTutor = {
+      id: Date.now(),
+      initials: (profile.name || 'Tutor').split(/\s+/).map((part) => part[0]).join('').toUpperCase().slice(0, 2),
+      subjects: [],
+      grades: [],
+      gradeRangeLabel: 'All grades',
+      modes: ['Online'],
+      rating: 0,
+      reviewsCount: 0,
+      experience: 0,
+      price: 250,
+      verified: false,
+      verificationStatus: 'Pending',
+      about: '',
+      description: 'Tutor profile pending completion.',
+      photoUrl: '',
+      ...profile,
+    };
+    try {
+      const result = await apiClient.post('/tutors', newTutor);
+      const savedTutor = result?.tutor || result;
+      if (savedTutor?.id) {
+        saveLocalTutors([savedTutor, ...getLocalTutors().filter((tutor) => String(tutor.id) !== String(savedTutor.id))]);
+        return savedTutor;
+      }
+    } catch {
+      // Keep a local profile available when the API is offline or has no create endpoint yet.
+    }
+    const tutors = getLocalTutors();
+    saveLocalTutors([newTutor, ...tutors]);
+    return newTutor;
+  },
+
   async updateTutor(id, updates) {
-    const numericId = Number(id);
     try {
       await apiClient.put(`/tutors/${id}`, updates);
     } catch {
@@ -50,10 +83,10 @@ export const tutorService = {
 
     const tutors = getLocalTutors();
     const updated = tutors.map((t) =>
-      t.id === numericId ? { ...t, ...updates } : t
+      String(t.id) === String(id) ? { ...t, ...updates } : t
     );
     saveLocalTutors(updated);
-    return updated.find((t) => t.id === numericId);
+    return updated.find((t) => String(t.id) === String(id));
   },
 
   async verifyTutor(id, status) {

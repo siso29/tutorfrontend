@@ -21,6 +21,8 @@ function TutorDashboard() {
     'I help secondary school learners understand physics and chemistry through clear explanations, examples, and exam preparation.'
   );
   const [profileMessage, setProfileMessage] = useState('');
+  const [profileError, setProfileError] = useState('');
+  const [photoUrl, setPhotoUrl] = useState('');
 
   const [availability, setAvailability] = useState([
     { day: 'Monday', enabled: true },
@@ -39,16 +41,32 @@ function TutorDashboard() {
   const [activeChatUser, setActiveChatUser] = useState(null);
 
   useEffect(() => {
-    // Load tutor profile for Dawit Alemu (ID 5) or matching user
-    tutorService.getTutorById(5).then((data) => {
-      if (data) {
-        setTutorData(data);
-        setHourlyRate(String(data.price));
-        setSubjects((data.subjects || []).join(', '));
-        setBio(data.about || '');
+    let active = true;
+    async function loadTutorProfile() {
+      const tutors = await tutorService.getAllTutors();
+      let profile = tutors.find((tutor) =>
+        (user?.id && String(tutor.userId || tutor.user_id) === String(user.id)) ||
+        (user?.email && tutor.email?.toLowerCase() === user.email.toLowerCase())
+      );
+      if (!profile && user?.role === 'tutor') {
+        profile = await tutorService.createTutor({
+          userId: user.id,
+          name: user.name || 'New Tutor',
+          email: user.email || '',
+          verificationStatus: 'Pending',
+        });
       }
-    });
-  }, []);
+      if (active && profile) {
+        setTutorData(profile);
+        setHourlyRate(String(profile.price || 250));
+        setSubjects((profile.subjects || []).join(', '));
+        setBio(profile.about || '');
+        setPhotoUrl(profile.photoUrl || profile.photo_url || '');
+      }
+    }
+    loadTutorProfile();
+    return () => { active = false; };
+  }, [user?.id, user?.email, user?.name, user?.role]);
 
   // Filter bookings for this tutor
   const tutorSessions = bookings.filter((b) => b.status === 'Confirmed');
@@ -85,11 +103,37 @@ function TutorDashboard() {
         subjects: subjectArray,
         about: bio,
         description: bio.slice(0, 120) + '...',
+        photoUrl,
+        initials: tutorData.name.split(/\s+/).map((part) => part[0]).join('').toUpperCase().slice(0, 2),
       });
       setTutorData(updated);
     }
+    setProfileError('');
     setProfileMessage('Your profile changes have been published across TutorConnect!');
     addNotification('Tutor profile updated successfully.', 'success');
+  }
+
+  function handlePhotoUpload(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setProfileError('Choose an image file such as JPG, PNG, or WebP.');
+      event.target.value = '';
+      return;
+    }
+    if (file.size > 1.5 * 1024 * 1024) {
+      setProfileError('Choose an image smaller than 1.5 MB.');
+      event.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPhotoUrl(String(reader.result));
+      setProfileError('');
+      setProfileMessage('Photo selected. Save your profile to publish it.');
+    };
+    reader.onerror = () => setProfileError('The image could not be loaded. Try another file.');
+    reader.readAsDataURL(file);
   }
 
   return (
@@ -172,7 +216,7 @@ function TutorDashboard() {
             </h1>
             <p>Welcome, {tutorData?.name || user?.name || 'Dawit Alemu'}. Manage your teaching activities in one place.</p>
           </div>
-          <div className="tutor-avatar">{tutorData?.initials || user?.avatar || 'DA'}</div>
+          <div className="tutor-avatar">{photoUrl ? <img src={photoUrl} alt="Tutor profile" /> : tutorData?.initials || user?.avatar || 'TC'}</div>
         </header>
 
         {activeTab === 'overview' && (
@@ -388,11 +432,20 @@ function TutorDashboard() {
             <p>Updates made here are reflected on your public profile and search listings.</p>
 
             <form className="tutor-profile-form" onSubmit={saveProfile}>
+              <div className="tutor-photo-editor">
+                <div className="tutor-photo-preview">{photoUrl ? <img src={photoUrl} alt="Profile preview" /> : tutorData?.initials || 'TC'}</div>
+                <label className="tutor-photo-upload">
+                  Profile photo
+                  <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={handlePhotoUpload} />
+                  <small>JPG, PNG, WebP or GIF · up to 1.5 MB</small>
+                </label>
+                {photoUrl && <button type="button" className="tutor-photo-remove" onClick={() => setPhotoUrl('')}>Remove photo</button>}
+              </div>
               <label>
                 Tutor name
                 <input
                   type="text"
-                  value={tutorData?.name || 'Dawit Alemu'}
+                  value={tutorData?.name || user?.name || ''}
                   disabled
                   style={{ background: '#f8fafc', color: '#64748b' }}
                 />
@@ -437,6 +490,7 @@ function TutorDashboard() {
               {profileMessage && (
                 <p className="tutor-success-message">{profileMessage}</p>
               )}
+              {profileError && <p className="tutor-profile-error" role="alert">{profileError}</p>}
             </form>
           </section>
         )}

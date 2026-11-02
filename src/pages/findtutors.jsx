@@ -255,7 +255,7 @@ function FindTutors() {
                   const saved = isSaved(tutor.id);
                   return (
                     <article className="find-tutor-card" key={tutor.id}>
-                      <div className="find-avatar">{tutor.initials}</div>
+                      <div className="find-avatar">{tutor.photoUrl || tutor.photo_url ? <img src={tutor.photoUrl || tutor.photo_url} alt={`${tutor.name} profile`} /> : tutor.initials}</div>
 
                       <div className="find-tutor-info">
                         <div className="find-tutor-name">
