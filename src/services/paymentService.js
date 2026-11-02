@@ -61,7 +61,18 @@ export async function verifyPayment(txRef, token) {
   return data;
 }
 
+export async function getMyPayments(token) {
+  if (!token) throw new Error('Please log in to view payment history.');
+  const response = await fetch(`${API_URL}/api/payments/mine`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.message || data.error || 'Could not load payment history.');
+  return Array.isArray(data) ? data : data.payments || [];
+}
+
 export const paymentService = {
   initializePayment,
   verifyPayment,
+  getMyPayments,
 };

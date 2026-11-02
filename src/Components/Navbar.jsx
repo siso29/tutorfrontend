@@ -175,6 +175,11 @@ function Navbar() {
                       🎓 My Learners & Bookings
                     </Link>
                   )}
+                  {(role === 'guardian' || role === 'student' || role === 'learner' || role === 'admin') && (
+                    <Link to="/payment/history" onClick={() => setDropdownOpen(false)}>
+                      Payment history
+                    </Link>
+                  )}
                   {role === 'tutor' && (
                     <Link
                       to="/tutor-dashboard"

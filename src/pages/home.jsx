@@ -1,293 +1,73 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { tutorService } from '../services/tutorService';
-
 import '../App.css';
 
-const subjects = [
-  'Mathematics',
-  'English',
-  'Physics',
-  'Chemistry',
-  'Biology',
-  'General Science',
-  'Information Communication and Technology (ICT)',
-  'History',
-  'Geography',
-  'Amharic',
-  'Afaan Oromoo',
-  'Economics',
-  'Drawing',
-  'Early learning',
-  'Programming',
-];
+const subjects = ['Mathematics', 'English', 'Physics', 'Chemistry', 'Biology', 'Programming', 'Amharic', 'Economics'];
 
 function Home() {
   const navigate = useNavigate();
   const [featuredTutors, setFeaturedTutors] = useState([]);
 
   useEffect(() => {
-    tutorService.getAllTutors().then((list) => {
-      setFeaturedTutors(list.slice(0, 3));
-    });
+    tutorService.getAllTutors().then((list) => setFeaturedTutors(list.filter((tutor) => tutor.verified).slice(0, 3))).catch(() => setFeaturedTutors([]));
   }, []);
 
+  const searchTutors = (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const params = new URLSearchParams();
+    ['subject', 'grade', 'mode'].forEach((key) => {
+      const value = form.get(key);
+      if (value) params.set(key, value);
+    });
+    navigate(`/find-tutors?${params.toString()}`);
+  };
+
   return (
-    <div className="app">
-      <main>
-        <section className="hero" id="home">
-          <div className="hero-content">
-            <span className="eyebrow">
-              ✓ Verified tutors · Grade 0 to Grade 12
-            </span>
-
-            <h1>
-              Find a tutor you can trust, for every <span>grade.</span>
-            </h1>
-
-            <p>
-              Compare verified tutors by subject, grade, price and availability.
-              Book a lesson, message safely and pay, all in one place.
-            </p>
-
-            <div className="hero-actions">
-              <Link to="/find-tutors" className="primary-btn">
-                Find a tutor
-              </Link>
-              <Link to="/register" className="secondary-btn">
-                Become a tutor
-              </Link>
-            </div>
+    <main className="business-home">
+      <section className="hero" id="home">
+        <div className="hero-content">
+          <span className="eyebrow"><span className="eyebrow-dot" /> A better way to learn</span>
+          <h1>Good teaching changes <em>everything.</em></h1>
+          <p>One-to-one tutoring for every learner. Find a trusted local or online tutor, book with confidence, and make real progress together.</p>
+          <div className="hero-actions">
+            <Link to="/find-tutors" className="primary-btn">Find your tutor <span aria-hidden="true">↗</span></Link>
+            <Link to="/how-it-works" className="hero-text-link">See how it works <span aria-hidden="true">→</span></Link>
           </div>
+          <div className="hero-proof"><div className="proof-avatars"><span>AM</span><span>MK</span><span>TH</span></div><div><strong>Trusted by families across Ethiopia</strong><small>Personal support for every learning journey</small></div></div>
+        </div>
+        <div className="hero-visual" aria-label="Personal tutoring and learning support">
+          <div className="hero-image-wash" />
+          <div className="visual-note note-top"><span className="note-icon">✦</span><span><strong>Learning, made personal</strong><small>Support that fits your goals</small></span></div>
+          <div className="visual-person"><div className="person-sun" /><div className="person-head" /><div className="person-body" /><div className="person-book">A+</div></div>
+          <div className="visual-note note-bottom"><span className="rating-star">★</span><span><strong>4.9 / 5</strong><small>From learner reviews</small></span></div>
+          <span className="visual-caption">Your next chapter starts here.</span>
+        </div>
+        <div className="hero-search-wrap"><form className="hero-search" onSubmit={searchTutors}>
+          <div className="search-heading"><span className="search-icon">⌕</span><span><strong>Find the right tutor</strong><small>Start with what you want to learn</small></span></div>
+          <label><span>SUBJECT</span><select name="subject" defaultValue=""><option value="">Choose a subject</option>{subjects.map((subject) => <option key={subject}>{subject}</option>)}</select></label>
+          <label><span>GRADE</span><select name="grade" defaultValue=""><option value="">Any grade</option>{Array.from({ length: 13 }, (_, index) => <option key={index} value={index}>Grade {index}</option>)}</select></label>
+          <label><span>LESSON TYPE</span><select name="mode" defaultValue=""><option value="">Online or in-person</option><option>Online</option><option>In-person</option><option>Hybrid</option></select></label>
+          <button type="submit" className="primary-btn search-btn">Search tutors <span aria-hidden="true">→</span></button>
+        </form></div>
+      </section>
 
-          <div className="search-card" id="find-tutors">
-            <h2>What do you need help with?</h2>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
+      <section className="trust-strip"><span>Thoughtful learning support for</span><strong>Every grade</strong><i /><strong>Every subject</strong><i /><strong>Every learner</strong></section>
 
-                const form = event.currentTarget;
-                const subject = form.querySelector('#subject').value;
-                const grade = form.querySelector('#grade').value;
-                const mode = form.querySelector('#mode').value;
+      <section className="subjects-section">
+        <div className="section-heading"><div><span className="eyebrow">Explore your options</span><h2>What would you like to learn?</h2></div><Link to="/find-tutors" className="text-link">Explore all subjects <span aria-hidden="true">→</span></Link></div>
+        <div className="subjects-list">{subjects.map((subject, index) => <Link to={`/find-tutors?subject=${encodeURIComponent(subject)}`} className="subject-chip" key={subject}><span className="subject-symbol">{['∑', 'Aa', '⚛', '◉', '⌬', '</>', '文', '↗'][index]}</span><span>{subject}</span><span className="subject-arrow" aria-hidden="true">↗</span></Link>)}</div>
+      </section>
 
-                const params = new URLSearchParams();
+      <section className="steps-section" id="how-it-works"><div className="section-heading centered"><span className="eyebrow">A clear path forward</span><h2>From looking to learning</h2><p>Everything you need to get started, in just a few simple steps.</p></div><div className="steps-grid">{[['01', 'Tell us what you need', 'Choose a subject, grade, and lesson format that works for you.'], ['02', 'Meet your match', 'Compare tutor profiles, experience, availability, and reviews.'], ['03', 'Book with confidence', 'Choose a time that suits you and review the details before confirming.'], ['04', 'Make real progress', 'Learn together, track your journey, and share feedback after a lesson.']].map(([number, title, description]) => <article className="step-card" key={number}><span className="step-number">{number}</span><h3>{title}</h3><p>{description}</p></article>)}</div></section>
 
-                if (subject) params.set('subject', subject);
-                if (grade) params.set('grade', grade);
-                if (mode) params.set('mode', mode);
+      <section className="safety-section"><div className="safety-intro"><span className="eyebrow">Confidence at every step</span><h2>Learning works best when everyone feels safe.</h2><p>We make it easier for families to find the right support with tutor profile reviews, guardian-led bookings, and a clear way to get help.</p><Link to="/about" className="text-link">Our approach to safer learning <span aria-hidden="true">→</span></Link></div><div className="safety-features">{[['✓', 'Reviewed tutor profiles', 'Tutor identity and qualifications are reviewed before a profile is verified.'], ['◎', 'Guardian-led bookings', 'Guardians can manage learner accounts and approve lesson bookings.'], ['↗', 'Support when you need it', 'Get in touch with our team whenever you have a question or concern.'], ['⌖', 'Privacy by design', 'Personal contact and location details stay protected.']].map(([icon, title, body]) => <article key={title}><span>{icon}</span><div><h3>{title}</h3><p>{body}</p></div></article>)}</div></section>
 
-                navigate(`/find-tutors?${params.toString()}`);
-              }}
-            >
-              <label htmlFor="subject">Subject</label>
-              <select id="subject" defaultValue="">
-                <option value="">Choose a subject</option>
-                {subjects.map((subject) => (
-                  <option key={subject} value={subject}>
-                    {subject}
-                  </option>
-                ))}
-              </select>
+      {featuredTutors.length > 0 && <section className="tutors-section"><div className="section-heading"><div><span className="eyebrow">Meet your learning partners</span><h2>Featured tutors</h2></div><Link to="/find-tutors" className="text-link">Meet all tutors <span aria-hidden="true">→</span></Link></div><div className="tutors-grid">{featuredTutors.map((tutor) => <article className="tutor-card" key={tutor.id}><div className="tutor-top"><div className="avatar">{tutor.initials}</div><span className="verified">✓ Verified</span></div><h3>{tutor.name}</h3><p className="tutor-subject">{(tutor.subjects || []).join(', ')} · {tutor.gradeRangeLabel || 'All grades'}</p><div className="tutor-bottom"><span className="rating">★ {tutor.rating} <span>({tutor.reviewsCount || tutor.reviews?.length || 0} reviews)</span></span><strong>{tutor.price} ETB<span>/hour</span></strong></div><button className="secondary-btn full-width" onClick={() => navigate(`/tutors/${tutor.id}`)}>View profile <span aria-hidden="true">→</span></button></article>)}</div></section>}
 
-              <label htmlFor="grade">Grade</label>
-              <select id="grade" defaultValue="">
-                <option value="">Choose a grade</option>
-                {Array.from({ length: 13 }, (_, index) => (
-                  <option key={index} value={index}>
-                    Grade {index}
-                  </option>
-                ))}
-              </select>
-
-              <label htmlFor="mode">Learning mode</label>
-              <select id="mode" defaultValue="">
-                <option value="">Any learning mode</option>
-                <option>Online</option>
-                <option>In-person</option>
-                <option>Hybrid</option>
-              </select>
-
-              <button type="submit" className="primary-btn search-btn">
-                Search tutors →
-              </button>
-            </form>
-          </div>
-        </section>
-
-        <section className="subjects-section">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">Explore learning</span>
-              <h2>Popular subjects</h2>
-            </div>
-          </div>
-
-          <div className="subjects-list">
-            {subjects.map((subject) => (
-              <Link
-                to={`/find-tutors?subject=${encodeURIComponent(subject)}`}
-                className="subject-chip"
-                key={subject}
-              >
-                {subject}
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        <section className="steps-section" id="how-it-works">
-          <div className="section-heading centered">
-            <span className="eyebrow">Simple and transparent</span>
-            <h2>How TutorConnect works</h2>
-            <p>
-              From first search to feedback, every step is clear and recorded.
-            </p>
-          </div>
-
-          <div className="steps-grid">
-            {[
-              [
-                '01',
-                'Tell us what you need',
-                'Choose subject, grade, mode and schedule.',
-              ],
-              [
-                '02',
-                'Compare verified tutors',
-                'See qualifications, price, availability and reviews.',
-              ],
-              [
-                '03',
-                'Book a lesson',
-                'Pick a free slot and review the price before confirming.',
-              ],
-              [
-                '04',
-                'Learn and review',
-                'Attend, pay and rate the session when it is complete.',
-              ],
-            ].map(([number, title, description]) => (
-              <article className="step-card" key={number}>
-                <span className="step-number">{number}</span>
-                <h3>{title}</h3>
-                <p>{description}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="safety-section" id="safety">
-          <div className="safety-intro">
-            <span className="eyebrow">Safety comes first</span>
-            <h2>Built around child safety.</h2>
-            <p>
-              Learners are minors, so safety comes first. Guardians stay in
-              control and every report creates a trackable case.
-            </p>
-            <Link to="/find-tutors?verified=true" className="primary-btn">
-              See verified tutors
-            </Link>
-          </div>
-
-          <div className="safety-features">
-            <article>
-              <span>✓</span>
-              <div>
-                <h3>Verified tutors</h3>
-                <p>
-                  Identity and qualification evidence is reviewed by an
-                  administrator.
-                </p>
-              </div>
-            </article>
-            <article>
-              <span>♧</span>
-              <div>
-                <h3>Guardian control</h3>
-                <p>Guardians manage learner accounts and approve bookings.</p>
-              </div>
-            </article>
-            <article>
-              <span>✉</span>
-              <div>
-                <h3>Safe messaging</h3>
-                <p>Messages stay on the platform and can be reported.</p>
-              </div>
-            </article>
-            <article>
-              <span>⌖</span>
-              <div>
-                <h3>Private locations</h3>
-                <p>A learner’s exact home address is never shown to tutors.</p>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <section className="tutors-section" id="tutor-results">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">Learn from the best</span>
-              <h2>Meet some of our top tutors</h2>
-            </div>
-            <Link to="/find-tutors" className="text-link">
-              Browse all tutors →
-            </Link>
-          </div>
-
-          <div className="tutors-grid">
-            {featuredTutors.map((tutor) => (
-              <article className="tutor-card" key={tutor.id}>
-                <div className="tutor-top">
-                  <div className="avatar">{tutor.initials}</div>
-                  {tutor.verified ? (
-                    <span className="verified">✓ Verified</span>
-                  ) : (
-                    <span className="pending-badge">Pending</span>
-                  )}
-                </div>
-
-                <h3>{tutor.name}</h3>
-                <p className="tutor-subject">
-                  {(tutor.subjects || []).join(', ')} · {tutor.gradeRangeLabel || 'All Grades'}
-                </p>
-
-                <div className="tutor-bottom">
-                  <span className="rating">
-                    ★ {tutor.rating} ({tutor.reviewsCount || tutor.reviews?.length || 0} reviews)
-                  </span>
-                  <strong>
-                    {tutor.price} ETB<span>/hr</span>
-                  </strong>
-                </div>
-
-                <button
-                  className="secondary-btn full-width"
-                  onClick={() => navigate(`/tutors/${tutor.id}`)}
-                >
-                  View tutor profile & Book →
-                </button>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="become-tutor" id="become-tutor">
-          <div>
-            <span className="eyebrow">Share your knowledge</span>
-            <h2>Are you a tutor?</h2>
-            <p>
-              Build a professional profile, set your own availability and price,
-              and reach learners and guardians looking for your subjects across Ethiopia.
-            </p>
-          </div>
-          <button className="primary-btn" onClick={() => navigate('/register')}>
-            Create tutor profile →
-          </button>
-        </section>
-      </main>
-    </div>
+      <section className="become-tutor"><div><span className="eyebrow">For passionate educators</span><h2>Great teachers belong here.</h2><p>Share your expertise, build a profile that reflects your teaching, and connect with learners looking for your skills.</p></div><Link to="/register" className="primary-btn">Teach with us <span aria-hidden="true">↗</span></Link></section>
+    </main>
   );
 }
 

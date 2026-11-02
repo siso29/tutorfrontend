@@ -16,6 +16,7 @@ import BookingConfirmation from './pages/BookingConfrimation.jsx';
 import ProtectedRoute from './Components/ProtectedRoute.jsx';
 import ToastContainer from './Components/ToastContainer.jsx';
 import PaymentResult from './pages/PaymentResult.jsx';
+import PaymentHistory from './pages/PaymentHistory.jsx';
 
 import { NotificationProvider } from './context/NotificationContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
@@ -68,6 +69,7 @@ function App() {
                 <Route path="/how-it-works" element={<HowItWorks />} />
                 <Route path="/booking-confirmation" element={<BookingConfirmation />} />
 <Route path="/payment-result" element={<PaymentResult />} />
+<Route path="/payment/history" element={<ProtectedRoute allowedRoles={['guardian', 'student', 'learner', 'admin']}><PaymentHistory /></ProtectedRoute>} />
 
 
 

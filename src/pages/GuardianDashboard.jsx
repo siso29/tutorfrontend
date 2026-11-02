@@ -6,12 +6,13 @@ import { useSavedTutors } from '../context/SavedTutorsContext';
 import { useNotification } from '../context/NotificationContext';
 import { tutorService } from '../services/tutorService';
 import { messageService } from '../services/messageService';
+import { paymentService } from '../services/paymentService';
 import ChatModal from '../Components/ChatModal';
 import '../CssPages/GuardianDashboard.css';
 
 function GuardianDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { bookings, updateBookingStatus } = useBookings();
   const { savedIds, toggleSaved } = useSavedTutors();
   const { inbox, addNotification } = useNotification();
@@ -43,6 +44,8 @@ function GuardianDashboard() {
     messageService.getConversations()
   );
   const [activeChatTutor, setActiveChatTutor] = useState(null);
+  const [payingBookingId, setPayingBookingId] = useState(null);
+  const [paymentError, setPaymentError] = useState('');
 
   // Filter bookings for this guardian / learner
   const confirmedSessions = bookings.filter((b) => b.status === 'Confirmed');
@@ -63,6 +66,18 @@ function GuardianDashboard() {
   function handleRequestAction(id, approved) {
     const newStatus = approved ? 'Confirmed' : 'Cancelled';
     updateBookingStatus(id, newStatus);
+  }
+
+  async function handlePayForSession(bookingId) {
+    setPayingBookingId(bookingId);
+    setPaymentError('');
+    try {
+      const { checkoutUrl } = await paymentService.initializePayment(bookingId, token);
+      window.location.assign(checkoutUrl);
+    } catch (error) {
+      setPaymentError(error.message || 'Could not start checkout. Please try again.');
+      setPayingBookingId(null);
+    }
   }
 
   function handleAddLearner(e) {
@@ -359,6 +374,7 @@ function GuardianDashboard() {
           <section className="guardian-panel">
             <h2>Upcoming Sessions</h2>
             <p>Review scheduled lessons with verified tutors.</p>
+            {paymentError && <p role="alert" style={{ color: '#b42318' }}>{paymentError}</p>}
 
             {confirmedSessions.length === 0 ? (
               <p className="guardian-empty">No confirmed sessions scheduled yet.</p>
@@ -376,6 +392,9 @@ function GuardianDashboard() {
                   </div>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <span className="guardian-status confirmed">Confirmed</span>
+                    <button className="primary-btn" style={{ fontSize: '0.8rem', padding: '6px 12px' }} disabled={payingBookingId === session.id} onClick={() => handlePayForSession(session.id)}>
+                      {payingBookingId === session.id ? 'Opening checkout…' : `Pay ${session.total} ETB`}
+                    </button>
                     <button
                       className="secondary-btn"
                       style={{ fontSize: '0.8rem', padding: '6px 12px' }}

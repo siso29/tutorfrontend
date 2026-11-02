@@ -1,20 +1,22 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { paymentService } from '../services/paymentService';
+import { useAuth } from '../context/AuthContext';
 import '../CssPages/BookingConfirmation.css';
 
 export default function PaymentHistory() {
+  const { token } = useAuth();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   useEffect(() => {
     let active = true;
-    paymentService.getMine().then((data) => {
+    paymentService.getMyPayments(token).then((data) => {
       if (active) setPayments(Array.isArray(data) ? data : []);
     }).catch((e) => { if (active) setError(e.message || 'Could not load payment history.'); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, []);
+  }, [token]);
   return (
     <main className="booking-confirmation">
       <div className="booking-card" style={{ maxWidth: 1000, width: '100%' }}>
